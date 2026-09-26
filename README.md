@@ -49,3 +49,7 @@ GameTests: `./gradlew :neoforge:runGameTestServer` and `./gradlew :fabric:runGam
 ## License
 
 MIT © 2026 Modroll Studio
+
+
+## Public links to the mod
+[Curseforge](www.curseforge.com/minecraft/mc-mods/critfall-initiative)
