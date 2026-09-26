@@ -1,0 +1,86 @@
+{
+  "format_version": 1,
+  "encounters": {
+    "enabled": true,
+    "trigger_on_player_attacking": true,
+    "trigger_on_player_attacked": true,
+    "trigger_on_provoked_neutral": true,
+    "hold_ranged_attackers": true,
+    "trigger_radius": 12.0,
+    "leave_radius": 20.0
+  },
+  "turns": {
+    "enabled": true,
+    "turn_timeout_ticks": 600,
+    "mob_turn_timeout_ticks": 120,
+    "initiative_bonus_per_speed": 20.0,
+    "initiative_max_bonus": 12,
+    "freeze_enabled": true,
+    "acting_marker_enabled": true,
+    "restrict_players_off_turn": true,
+    "no_freeze_types": []
+  },
+  "actions": {
+    "enabled": true,
+    "movement_budget_blocks": 6.0,
+    "single_attack_per_turn": true,
+    "attack_reach_blocks": 4.0,
+    "end_turn_when_spent": false,
+    "mob_end_turn_when_spent": true,
+    "dash": true,
+    "disengage": true,
+    "dodge": true,
+    "help": true,
+    "hide": true,
+    "opportunity_attack": true,
+    "opportunity_attack_reach_blocks": 3.0,
+    "hide_observer_perception_bonus": 0,
+    "hide_stealth_bonus": 0,
+    "hide_suppresses_targeting": true,
+    "shove": true,
+    "shove_reach_blocks": 3.0,
+    "shove_knockback_strength": 1.0,
+    "shove_attacker_bonus": 0,
+    "shove_defender_bonus": 0,
+    "ender_pearl_blink": true,
+    "blink_max_blocks": 8.0,
+    "fishing_rod_reel": true,
+    "reel_pull_strength": 1.0,
+    "reel_attacker_bonus": 0,
+    "reel_defender_bonus": 0
+  },
+  "cover": {
+    "enabled": true,
+    "half_cover_ac_bonus": 2,
+    "three_quarter_cover_ac_bonus": 5,
+    "half_cover_threshold": 0.5,
+    "three_quarter_cover_threshold": 0.75,
+    "total_cover_blocks_attack": true,
+    "block_placement_costs_movement": true,
+    "block_placement_movement_cost": 1.0
+  },
+  "grapple": {
+    "enabled": true,
+    "reach_blocks": 3.0,
+    "attacker_bonus": 0,
+    "defender_bonus": 0,
+    "break_distance_blocks": 5.0,
+    "escape": true,
+    "escape_attacker_bonus": 0,
+    "escape_defender_bonus": 0
+  },
+  "hud": {
+    "enabled": true
+  },
+  "action_ui": {
+    "enabled": true
+  },
+  "roll_animation": {
+    "enabled": true,
+    "tumble_ticks": 10,
+    "hold_ticks": 10,
+    "face_change_ticks": 2,
+    "hold_readout": true,
+    "shared_visibility": true
+  }
+}
