@@ -1,0 +1,11 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "studio.modroll.initiative.neoforge.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": ["MobAiStepMixin"],
+  "client": ["OverlayMessageMixin"],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
