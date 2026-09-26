@@ -1,0 +1,33 @@
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.eclipse/
+bin/
+.classpath
+.project
+.settings/
+
+# Minecraft dev runs
+run/
+run2/
+run-gametest/
+runs/
+run-data/
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local env
+.env
+local.properties
+
+# Local working notes
+Prompt*.md

@@ -1,0 +1,91 @@
+plugins {
+    id 'net.neoforged.moddev'
+}
+
+// GameTest registration shims and their structure template: dev runs only, never shipped.
+sourceSets {
+    gametest
+}
+
+neoForge {
+    version = neoforge_version
+
+    addModdingDependenciesTo sourceSets.gametest
+
+    runs {
+        client {
+            client()
+            programArguments.addAll '--username', 'Dev1'
+        }
+        // Second client for two-player playtests: its own game directory so the two do not share
+        // a session lock, and its own name so the turn order tells them apart.
+        client2 {
+            client()
+            programArguments.addAll '--username', 'Dev2'
+            gameDirectory = file('run2')
+        }
+        server {
+            server()
+        }
+        // Its own game directory: the suite must see only Initiative and Critfall, and the playtest
+        // run/ holds whatever mods a session dropped in there — a mob-behaviour mod moves the mock
+        // players and the movement-budget assertions fail on a coin flip.
+        gameTestServer {
+            type = 'gameTestServer'
+            systemProperty 'neoforge.enabledGameTestNamespaces', mod_id
+            gameDirectory = file('run-gametest')
+        }
+    }
+
+    mods {
+        "${mod_id}" {
+            sourceSet sourceSets.main
+            sourceSet project(':common').sourceSets.main
+            // Shared GameTest bodies — loaded on the gameTestServer run, not shipped in the jar.
+            sourceSet project(':common').sourceSets.gametest
+            sourceSet sourceSets.gametest
+        }
+    }
+}
+
+dependencies {
+    compileOnly project(':common')
+
+    gametestCompileOnly project(':common')
+    // The gametest delegators compile against the shared *Scenarios classes.
+    gametestCompileOnly project(':common').sourceSets.gametest.output
+
+    // Critfall consumed as a published Modrinth artifact; implementation puts it on the dev-run
+    // runtime classpath so FML loads it as a mod in runClient/gameTestServer.
+    implementation "maven.modrinth:critfall:${critfall_version}"
+}
+
+// Nothing in the build graph compiles the gametest source set otherwise; keep CI's `check` catching it.
+tasks.named('check') { dependsOn tasks.named('gametestClasses') }
+
+// Bundle common's compiled classes into the NeoForge jar. Common's resources come through
+// processResources below (with property expansion) — bundling output too would duplicate them.
+jar {
+    from project(':common').sourceSets.main.output.classesDirs
+}
+
+processResources {
+    from project(':common').sourceSets.main.resources
+
+    def props = [
+            mod_id                 : mod_id,
+            mod_name               : mod_name,
+            mod_version            : project.version,
+            mod_authors            : mod_authors,
+            mod_description        : mod_description,
+            mod_license            : mod_license,
+            mod_issue_tracker      : mod_issue_tracker,
+            minecraft_version_range: minecraft_version_range,
+            neoforge_version_range : neoforge_version_range,
+            critfall_version_range : critfall_version_range,
+    ]
+    inputs.properties props
+    filesMatching(['META-INF/neoforge.mods.toml', 'pack.mcmeta']) {
+        expand props
+    }
+}
