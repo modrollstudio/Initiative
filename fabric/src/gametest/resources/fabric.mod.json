@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "initiative_gametest",
+  "version": "1.0.0",
+  "name": "Initiative GameTests",
+  "description": "Dev-only GameTest registration for Initiative; never shipped.",
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": {
+    "fabric-gametest": [
+      "studio.modroll.initiative.fabric.gametest.CritfallApiGameTests",
+      "studio.modroll.initiative.fabric.gametest.EncounterGameTests",
+      "studio.modroll.initiative.fabric.gametest.TurnOrderGameTests",
+      "studio.modroll.initiative.fabric.gametest.FreezeGameTests",
+      "studio.modroll.initiative.fabric.gametest.HudGameTests",
+      "studio.modroll.initiative.fabric.gametest.ActionGameTests",
+      "studio.modroll.initiative.fabric.gametest.StandardActionGameTests",
+      "studio.modroll.initiative.fabric.gametest.ReactionGameTests",
+      "studio.modroll.initiative.fabric.gametest.NativeActionGameTests",
+      "studio.modroll.initiative.fabric.gametest.CoverGameTests",
+      "studio.modroll.initiative.fabric.gametest.RollAnimationGameTests",
+      "studio.modroll.initiative.fabric.gametest.ExternalActionGameTests",
+      "studio.modroll.initiative.fabric.gametest.ActionUiGameTests",
+      "studio.modroll.initiative.fabric.gametest.GrappleGameTests",
+      "studio.modroll.initiative.fabric.gametest.MultiplayerGameTests",
+      "studio.modroll.initiative.fabric.gametest.OffTurnGameTests",
+      "studio.modroll.initiative.fabric.gametest.ProvocationGameTests",
+      "studio.modroll.initiative.fabric.gametest.ConcealmentGameTests",
+      "studio.modroll.initiative.fabric.gametest.RangedGameTests"
+    ]
+  },
+  "depends": {
+    "initiative": "*"
+  }
+}

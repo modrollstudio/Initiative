@@ -1,0 +1,12 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "studio.modroll.initiative.fabric.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "refmap": "initiative.refmap.json",
+  "mixins": ["BlockPlacementMixin", "MobAiStepMixin", "MobTargetMixin"],
+  "client": ["FieldOfViewMixin", "OverlayMessageMixin"],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

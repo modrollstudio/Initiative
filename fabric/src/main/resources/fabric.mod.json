@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "${mod_id}",
+  "version": "${mod_version}",
+  "name": "${mod_name}",
+  "description": "${mod_description}",
+  "license": "${mod_license}",
+  "authors": ["Modroll Studio"],
+  "contributors": ["NightsHigh"],
+  "contact": {
+    "homepage": "https://modroll.studio",
+    "sources": "https://github.com/modrollstudio/Initiative",
+    "issues": "${mod_issue_tracker}"
+  },
+  "environment": "*",
+  "mixins": ["initiative.fabric.mixins.json"],
+  "entrypoints": {
+    "main": ["studio.modroll.initiative.fabric.InitiativeFabric"],
+    "client": ["studio.modroll.initiative.fabric.client.InitiativeFabricClient"]
+  },
+  "depends": {
+    "fabricloader": ">=${fabric_loader_version}",
+    "minecraft": ">=${minecraft_version} <1.22",
+    "java": ">=21",
+    "fabric-api": "*",
+    "critfall": ">=${critfall_version}"
+  }
+}
