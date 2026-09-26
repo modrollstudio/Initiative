@@ -9,6 +9,15 @@
   longer carry GameTest registration or its structure template, so another mod's GameTest run with
   Initiative installed no longer fails on missing test bodies; the build now refuses a jar that does.
 
+- **The whole party rolls initiative.** When one player started a fight, a friend standing a block
+  away stayed in real time and never joined: players only entered an encounter by attacking or being
+  attacked, so a group had to take turns hitting the mob before the table was complete. Every player
+  within `trigger_radius` of the fight now joins it as it forms and rolls initiative, and a player
+  who walks into a running encounter joins mid-fight, rolled into the order the same way a late
+  hostile is. Spectator and creative players are never pulled in, and a player already fighting
+  elsewhere stays there. New `encounters.pull_nearby_players` (default on); off restores joining by
+  attack only.
+
 - **Skeletons can no longer plink at you from outside the fight.** A melee mob has to walk into the
   encounter to reach you, and walking in is what puts it in the turn order; an archer never has to.
   Its first arrow did pull it in — the shot's owner is the attacker Critfall reports — but the

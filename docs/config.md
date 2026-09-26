@@ -36,6 +36,7 @@ Example (see [examples/initiative.json](examples/initiative.json)):
     "trigger_on_player_attacked": true,
     "trigger_on_provoked_neutral": true,
     "hold_ranged_attackers": true,
+    "pull_nearby_players": true,
     "trigger_radius": 12.0,
     "leave_radius": 20.0
   },
@@ -131,7 +132,8 @@ Example (see [examples/initiative.json](examples/initiative.json)):
 | `trigger_on_player_attacked` | boolean | A hostile attacking a player starts an encounter. |
 | `trigger_on_provoked_neutral` | boolean | A neutral mob that turns hostile toward a player starts or joins an encounter, and leaves again when it calms down. Off restores `Enemy`-only triggering. See [encounters](encounters.md#when-a-neutral-mob-counts-as-hostile). |
 | `hold_ranged_attackers` | boolean | A participant that shot its way into the fight is not measured against `leave_radius` while it still has someone in the fight in its sights. Off restores the plain distance rule, which drops a shooter that stands outside the leave radius a tick after each hit. See [encounters](encounters.md#shooting-into-a-fight-from-outside). |
-| `trigger_radius` | number > 0 | Blocks around the trigger point; hostiles inside are pulled into the encounter, and hostiles entering later join. |
+| `pull_nearby_players` | boolean | Players within `trigger_radius` join the encounter when it forms, and players who walk in later join mid-encounter, rolling initiative either way. Spectator and creative players are never pulled in. Off: a player joins only by attacking or being attacked. See [encounters](encounters.md#lifecycle). |
+| `trigger_radius` | number > 0 | Blocks around the trigger point; hostiles (and, with `pull_nearby_players`, players) inside are pulled into the encounter, and those entering later join. |
 | `leave_radius` | number ≥ `trigger_radius` | Participants farther than this from the encounter center leave the encounter — unless `hold_ranged_attackers` is holding a shooter in. |
 
 ## `turns`

@@ -48,9 +48,15 @@ forms or joins an encounter again.
 
 ## Joining, and one encounter per entity
 
+The whole party rolls initiative. When a fight starts, every player within `trigger_radius` of its
+center joins it along with the one who struck, and a player who walks into the bubble later joins
+mid-encounter. Spectator and creative players are left out of the radius pull, and
+`encounters.pull_nearby_players` off turns it off altogether, so that only attacking or being
+attacked brings a player in.
+
 A player who attacks into an existing encounter **joins that encounter** — they do not open a second
-one. They roll initiative on the spot and are inserted into the running order by that roll; a slot
-that has already passed this round means they first act next round.
+one. However they join, they roll initiative on the spot and are inserted into the running order by
+that roll; a slot that has already passed this round means they first act next round.
 
 Encounters never merge, and **an entity belongs to exactly one encounter at a time**. A hostile
 already fighting somewhere is not pulled into a second bubble, whether by a radius sweep or by

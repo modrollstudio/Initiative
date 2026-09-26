@@ -68,4 +68,19 @@ public class MultiplayerGameTests {
     public void aMobFreedByADisconnectJoinsAnotherPlayersEncounter(GameTestHelper helper) {
         MultiplayerScenarios.aMobFreedByADisconnectJoinsAnotherPlayersEncounter(helper);
     }
+
+    @GameTest(template = TEMPLATE, batch = "m9PartyPull")
+    public void aNearbyPlayerRollsInWhenTheFightStarts(GameTestHelper helper) {
+        MultiplayerScenarios.aNearbyPlayerRollsInWhenTheFightStarts(helper);
+    }
+
+    @GameTest(template = TEMPLATE, batch = "m9WalkIn")
+    public void aPlayerWalkingInJoinsTheRunningOrder(GameTestHelper helper) {
+        MultiplayerScenarios.aPlayerWalkingInJoinsTheRunningOrder(helper);
+    }
+
+    @GameTest(template = TEMPLATE, batch = "m9PartyPullOff")
+    public void pullNearbyPlayersOffLeavesABystanderOut(GameTestHelper helper) {
+        MultiplayerScenarios.pullNearbyPlayersOffLeavesABystanderOut(helper);
+    }
 }

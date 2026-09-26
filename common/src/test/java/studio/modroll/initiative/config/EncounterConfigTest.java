@@ -19,6 +19,7 @@ class EncounterConfigTest {
                     "trigger_on_player_attacked": false,
                     "trigger_on_provoked_neutral": true,
                     "hold_ranged_attackers": false,
+                    "pull_nearby_players": false,
                     "trigger_radius": %s,
                     "leave_radius": %s
                 }}""".formatted(triggerRadius, leaveRadius);
@@ -33,6 +34,7 @@ class EncounterConfigTest {
         assertFalse(config.triggerOnPlayerAttacked());
         assertTrue(config.triggerOnProvokedNeutral());
         assertFalse(config.holdRangedAttackers());
+        assertFalse(config.pullNearbyPlayers());
         assertEquals(12.0, config.triggerRadius());
         assertEquals(20.0, config.leaveRadius());
         assertNothingReported(source);
@@ -53,6 +55,24 @@ class EncounterConfigTest {
         EncounterConfig config = EncounterConfig.fromJson(source);
         assertTrue(config.holdRangedAttackers());
         assertReported(source, ConfigIssue.Kind.MISSING, "encounters.hold_ranged_attackers");
+    }
+
+    /** The key a file written before nearby players were pulled into the fight does not have. */
+    @Test
+    void missingPullNearbyPlayersKeyFallsBackToOn() {
+        ConfigSource source = source("""
+                {"encounters": {
+                    "enabled": true,
+                    "trigger_on_player_attacking": true,
+                    "trigger_on_player_attacked": true,
+                    "trigger_on_provoked_neutral": true,
+                    "hold_ranged_attackers": true,
+                    "trigger_radius": 12.0,
+                    "leave_radius": 20.0
+                }}""");
+        EncounterConfig config = EncounterConfig.fromJson(source);
+        assertTrue(config.pullNearbyPlayers());
+        assertReported(source, ConfigIssue.Kind.MISSING, "encounters.pull_nearby_players");
     }
 
     @Test

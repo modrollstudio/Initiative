@@ -8,6 +8,7 @@ import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.monster.Husk;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.GameType;
 import net.minecraft.world.phys.Vec3;
 import studio.modroll.critfall.api.CombatSuppression;
 import studio.modroll.critfall.api.RollService;
@@ -40,7 +41,14 @@ import studio.modroll.initiative.ui.ActionUiSnapshots;
  */
 public final class MultiplayerScenarios {
 
-    private static final EncounterConfig TIGHT_BUBBLE = new EncounterConfig(true, true, true, false, true, 1.0, 30.0);
+    private static final EncounterConfig TIGHT_BUBBLE =
+            new EncounterConfig(true, true, true, false, true, true, 1.0, 30.0);
+    /** Wide enough that the radius sweep reaches a player standing beside the one who attacked. */
+    private static final EncounterConfig PARTY_BUBBLE =
+            new EncounterConfig(true, true, true, false, true, true, 4.0, 30.0);
+
+    private static final EncounterConfig PARTY_PULL_OFF =
+            new EncounterConfig(true, true, true, false, true, false, 4.0, 30.0);
     private static final TurnConfig TURNS = new TurnConfig(true, 200, 200, 20.0, 12, false, false, false, Set.of());
     private static final TurnConfig SHORT_TURNS = new TurnConfig(true, 20, 20, 20.0, 12, true, false, false, Set.of());
     private static final ActionConfig ACTIONS = new ActionConfig(
@@ -423,6 +431,94 @@ public final class MultiplayerScenarios {
                     discard(elsewhere, freed, theirs);
                 })
                 .thenSucceed();
+    }
+
+    /**
+     * The whole party rolls initiative: a player standing beside the one who struck is pulled in by
+     * the same sweep that pulls the hostiles, and rolls into the order. A creative or spectator
+     * player in the same spot is not — not when the fight forms, and not on any tick after.
+     */
+    public static void aNearbyPlayerRollsInWhenTheFightStarts(GameTestHelper helper) {
+        prepareServerState(helper, ACTIONS, TURNS);
+        InitiativeConfig.overrideEncountersForTesting(PARTY_BUBBLE);
+        Player striker = ScenarioSupport.spawnPlayer(helper, 1, 1);
+        Player beside = ScenarioSupport.spawnPlayer(helper, 1, 3);
+        Player creative = ScenarioSupport.spawnPlayer(helper, 2, 2, GameType.CREATIVE);
+        Player spectator = ScenarioSupport.spawnPlayer(helper, 3, 1, GameType.SPECTATOR);
+        Husk husk = ScenarioSupport.spawnHusk(helper, 3, 3);
+        // Join order: the striker, the husk it hit, then the sweep — which only the bystander passes.
+        ScenarioSupport.formEncounter(helper, striker, List.of(20, 1, 10), husk);
+        Encounter encounter = encounterOf(helper, striker);
+        if (!encounter.contains(beside.getUUID())) {
+            helper.fail("a player inside trigger_radius must join the fight as it forms");
+        }
+        if (encounter.side(beside.getUUID()) != Encounter.Side.PLAYER) {
+            helper.fail("a pulled-in player must join on the player side");
+        }
+        requireOrder(helper, encounter, List.of(striker.getUUID(), beside.getUUID(), husk.getUUID()));
+        helper.startSequence()
+                .thenExecuteAfter(2, () -> {
+                    requireOutOfEveryEncounter(helper, creative, "a creative player");
+                    requireOutOfEveryEncounter(helper, spectator, "a spectator");
+                    discard(striker, beside, creative, spectator, husk);
+                })
+                .thenSucceed();
+    }
+
+    /**
+     * A player who walks into a running fight joins it mid-encounter through the same late-join path
+     * a hostile takes: an initiative roll, inserted into the order by that roll, and the turn that is
+     * running stays where it is.
+     */
+    public static void aPlayerWalkingInJoinsTheRunningOrder(GameTestHelper helper) {
+        prepareServerState(helper, ACTIONS, TURNS);
+        InitiativeConfig.overrideEncountersForTesting(PARTY_BUBBLE);
+        Player striker = ScenarioSupport.spawnPlayer(helper, 1, 1);
+        Husk husk = ScenarioSupport.spawnHusk(helper, 2, 1);
+        Player latecomer = ScenarioSupport.spawnPlayer(helper, 9, 9);
+        ScenarioSupport.formEncounter(helper, striker, List.of(20, 1), husk);
+        Encounter encounter = encounterOf(helper, striker);
+        helper.startSequence()
+                .thenExecuteAfter(2, () -> {
+                    requireOutOfEveryEncounter(helper, latecomer, "a player outside trigger_radius");
+                    Vec3 inside = helper.absoluteVec(new Vec3(2, 1, 3));
+                    latecomer.setPos(inside.x, inside.y, inside.z);
+                    // Run the encounter tick here so the join's roll draws from the scripted dice.
+                    ScenarioSupport.forceNaturals(helper, List.of(10), () -> EncounterManager.tick(helper.getLevel()));
+                    if (!encounter.contains(latecomer.getUUID())) {
+                        helper.fail("a player who walks into trigger_radius must join the running encounter");
+                    }
+                    requireOrder(helper, encounter, List.of(striker.getUUID(), latecomer.getUUID(), husk.getUUID()));
+                    if (!encounter.turnOrder().currentTurn().orElseThrow().equals(striker.getUUID())) {
+                        helper.fail("a mid-fight join must not move the turn that is running");
+                    }
+                    discard(striker, husk, latecomer);
+                })
+                .thenSucceed();
+    }
+
+    /** With pull_nearby_players off, attacking or being attacked is the only way a player joins. */
+    public static void pullNearbyPlayersOffLeavesABystanderOut(GameTestHelper helper) {
+        prepareServerState(helper, ACTIONS, TURNS);
+        InitiativeConfig.overrideEncountersForTesting(PARTY_PULL_OFF);
+        Player striker = ScenarioSupport.spawnPlayer(helper, 1, 1);
+        Player beside = ScenarioSupport.spawnPlayer(helper, 1, 3);
+        Husk husk = ScenarioSupport.spawnHusk(helper, 3, 3);
+        ScenarioSupport.formEncounter(helper, striker, List.of(20, 1), husk);
+        requireOrder(helper, encounterOf(helper, striker), List.of(striker.getUUID(), husk.getUUID()));
+        helper.startSequence()
+                .thenExecuteAfter(2, () -> {
+                    requireOutOfEveryEncounter(helper, beside, "a bystander with pull_nearby_players off");
+                    discard(striker, beside, husk);
+                })
+                .thenSucceed();
+    }
+
+    private static void requireOutOfEveryEncounter(GameTestHelper helper, Player player, String who) {
+        if (EncounterManager.encounterContaining(helper.getLevel(), player.getUUID())
+                .isPresent()) {
+            helper.fail(who + " must not be pulled into an encounter");
+        }
     }
 
     private static void requireWatchers(

@@ -62,4 +62,19 @@ public class MultiplayerGameTests implements FabricGameTest {
     public void aMobFreedByADisconnectJoinsAnotherPlayersEncounter(GameTestHelper helper) {
         MultiplayerScenarios.aMobFreedByADisconnectJoinsAnotherPlayersEncounter(helper);
     }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE, batch = "m9PartyPull")
+    public void aNearbyPlayerRollsInWhenTheFightStarts(GameTestHelper helper) {
+        MultiplayerScenarios.aNearbyPlayerRollsInWhenTheFightStarts(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE, batch = "m9WalkIn")
+    public void aPlayerWalkingInJoinsTheRunningOrder(GameTestHelper helper) {
+        MultiplayerScenarios.aPlayerWalkingInJoinsTheRunningOrder(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE, batch = "m9PartyPullOff")
+    public void pullNearbyPlayersOffLeavesABystanderOut(GameTestHelper helper) {
+        MultiplayerScenarios.pullNearbyPlayersOffLeavesABystanderOut(helper);
+    }
 }

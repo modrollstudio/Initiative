@@ -92,7 +92,7 @@ public final class EncounterManager {
         join(level, encounter, attacker);
         join(level, encounter, victim);
         noteRangedAttack(encounter, attacker, victim, delivery);
-        pullHostilesInRadius(level, encounter, config.triggerRadius());
+        pullInRadius(level, encounter, config.triggerRadius());
     }
 
     /**
@@ -164,7 +164,7 @@ public final class EncounterManager {
                 releaseAll(level, encounter);
                 iterator.remove();
             } else {
-                pullHostilesInRadius(level, encounter, config.triggerRadius());
+                pullInRadius(level, encounter, config.triggerRadius());
                 if (turns.enabled()) {
                     encounter.turnOrder().tick(TurnTimeout.forCurrentActor(level, encounter.turnOrder(), turns));
                 }
@@ -277,28 +277,39 @@ public final class EncounterManager {
         ACTIVE.computeIfAbsent(level, l -> new ArrayList<>()).add(encounter);
         join(level, encounter, player);
         join(level, encounter, mob);
-        pullHostilesInRadius(level, encounter, config.triggerRadius());
+        pullInRadius(level, encounter, config.triggerRadius());
     }
 
-    private static void pullHostilesInRadius(ServerLevel level, Encounter encounter, double radius) {
+    /**
+     * The radius sweep, run when a fight forms and on every tick after: whoever belongs in the fight
+     * and stands inside the bubble joins it, rolling initiative into the running order as they do.
+     * Anyone already fighting elsewhere is left where they are.
+     */
+    private static void pullInRadius(ServerLevel level, Encounter encounter, double radius) {
         AABB box = AABB.ofSize(encounter.center(), radius * 2, radius * 2, radius * 2);
-        for (LivingEntity hostile : level.getEntitiesOfClass(
+        for (LivingEntity entity : level.getEntitiesOfClass(
                 LivingEntity.class,
                 box,
                 entity -> entity.isAlive()
                         && encounter.isWithin(entity.position(), radius)
                         && belongsInFight(level, encounter, entity)
                         && encounterContaining(level, entity.getUUID()).isEmpty())) {
-            join(level, encounter, hostile);
+            join(level, encounter, entity);
         }
     }
 
     /**
+     * The whole party rolls initiative: a player inside the bubble is pulled in with the fight, and
+     * one who walks in later joins mid-fight — unless they are only watching (spectator) or outside
+     * the rules (creative), or {@code pull_nearby_players} is off and attacking is the only way in.
      * Always-hostile mobs are pulled in on sight; a neutral one only once it is hostile toward a
      * player already fighting here — so an angry wolf that walks into the bubble joins and the sheep
      * next to it does not.
      */
     private static boolean belongsInFight(ServerLevel level, Encounter encounter, LivingEntity entity) {
+        if (entity instanceof Player player) {
+            return InitiativeConfig.encounters().pullNearbyPlayers() && !player.isSpectator() && !player.isCreative();
+        }
         return entity instanceof Enemy
                 || InitiativeConfig.encounters().triggerOnProvokedNeutral()
                         && entity instanceof Mob mob

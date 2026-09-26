@@ -13,13 +13,16 @@ Server-side only; clients receive nothing yet. All values come from [config](con
   Initiative itself drives through the API cannot re-trigger detection.
 - **Provoked neutrals** — a mob that is not an `Enemy` starts an encounter the moment it turns
   hostile toward a player. See [the rule](#when-a-neutral-mob-counts-as-hostile) below.
-- **Initial pull** — every living `Enemy` within `trigger_radius` of the center joins.
+- **Initial pull** — every living `Enemy` within `trigger_radius` of the center joins, and so does
+  every player there: the whole party rolls initiative, not just whoever struck first.
 - **Late join** — each tick, living `Enemy` entities inside `trigger_radius` that are not in an
   encounter join, as do neutral mobs inside it that are hostile toward a player participant — an
-  already-angry wolf that walks into the bubble joins, the sheep beside it does not. Players only
-  join by attacking or being attacked by an encounter member. An entity belongs to **exactly one**
-  encounter: one already fighting elsewhere is never pulled into a second, and encounters never
-  merge.
+  already-angry wolf that walks into the bubble joins, the sheep beside it does not. A player who
+  walks into the bubble joins the same way, rolling initiative into the running order. Spectator
+  and creative players are never pulled in by the radius; attacking or being attacked still brings
+  a player in from anywhere. With `pull_nearby_players` off, that is the only way a player joins.
+  An entity belongs to **exactly one** encounter: one already fighting elsewhere is never pulled
+  into a second, and encounters never merge.
 - **Leave** — each tick a participant is dropped when it is dead, gone from the level
   (unloaded, dimension change), or farther than `leave_radius` from the center — except a
   [ranged attacker](#shooting-into-a-fight-from-outside) still shooting into it. A former neutral is

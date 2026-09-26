@@ -30,7 +30,8 @@ import studio.modroll.initiative.turn.TurnOrder;
  */
 public final class OffTurnScenarios {
 
-    private static final EncounterConfig TIGHT_BUBBLE = new EncounterConfig(true, true, true, false, true, 1.0, 8.0);
+    private static final EncounterConfig TIGHT_BUBBLE =
+            new EncounterConfig(true, true, true, false, true, true, 1.0, 8.0);
     private static final TurnConfig RESTRICT_ON =
             new TurnConfig(true, 1000, 1000, 20.0, 12, false, false, true, Set.of());
     private static final TurnConfig RESTRICT_OFF =

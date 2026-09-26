@@ -40,7 +40,8 @@ public final class ExternalActionScenarios {
 
     private static final ResourceLocation MARK = ResourceLocation.fromNamespaceAndPath("initiativetest", "mark");
 
-    private static final EncounterConfig TIGHT_BUBBLE = new EncounterConfig(true, true, true, false, true, 1.0, 30.0);
+    private static final EncounterConfig TIGHT_BUBBLE =
+            new EncounterConfig(true, true, true, false, true, true, 1.0, 30.0);
     private static final TurnConfig TURNS = new TurnConfig(true, 1000, 1000, 20.0, 12, false, false, false, Set.of());
     private static final ActionConfig ACTIONS = new ActionConfig(
             true, 6.0, true, 4.0, false, true, true, true, true, true, true, true, 3.0, 0, 0, true, true, 3.0, 1.0, 0,

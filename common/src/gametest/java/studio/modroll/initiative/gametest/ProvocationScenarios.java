@@ -32,8 +32,9 @@ import studio.modroll.initiative.turn.AiFreeze;
  */
 public final class ProvocationScenarios {
 
-    private static final EncounterConfig PROVOKED = new EncounterConfig(true, true, true, true, true, 6.0, 30.0);
-    private static final EncounterConfig PROVOKED_OFF = new EncounterConfig(true, true, true, false, true, 6.0, 30.0);
+    private static final EncounterConfig PROVOKED = new EncounterConfig(true, true, true, true, true, true, 6.0, 30.0);
+    private static final EncounterConfig PROVOKED_OFF =
+            new EncounterConfig(true, true, true, false, true, true, 6.0, 30.0);
     private static final TurnConfig TURNS = new TurnConfig(true, 1000, 1000, 20.0, 12, false, false, false, Set.of());
     private static final TurnConfig TURNS_FREEZING =
             new TurnConfig(true, 1000, 1000, 20.0, 12, true, false, false, Set.of());

@@ -75,7 +75,11 @@ final class ScenarioSupport {
      * the scenarios need; no assertion may depend on mobs seeing or pathing to the player.
      */
     static Player spawnPlayer(GameTestHelper helper, double x, double z) {
-        Player player = helper.makeMockPlayer(GameType.SURVIVAL);
+        return spawnPlayer(helper, x, z, GameType.SURVIVAL);
+    }
+
+    static Player spawnPlayer(GameTestHelper helper, double x, double z, GameType gameType) {
+        Player player = helper.makeMockPlayer(gameType);
         Vec3 pos = helper.absoluteVec(new Vec3(x, 1, z));
         player.moveTo(pos.x, pos.y, pos.z, 0, 0);
         helper.getLevel().addFreshEntity(player);

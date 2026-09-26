@@ -10,6 +10,7 @@ public record EncounterConfig(
         boolean triggerOnPlayerAttacked,
         boolean triggerOnProvokedNeutral,
         boolean holdRangedAttackers,
+        boolean pullNearbyPlayers,
         double triggerRadius,
         double leaveRadius) {
 
@@ -28,6 +29,7 @@ public record EncounterConfig(
                 encounters.read("trigger_on_player_attacked", BOOLEAN),
                 encounters.read("trigger_on_provoked_neutral", BOOLEAN),
                 encounters.read("hold_ranged_attackers", BOOLEAN),
+                encounters.read("pull_nearby_players", BOOLEAN),
                 triggerRadius,
                 leaveRadius);
     }

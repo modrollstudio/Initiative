@@ -26,7 +26,8 @@ import studio.modroll.initiative.hud.TurnOrderSync;
  */
 public final class HudScenarios {
 
-    private static final EncounterConfig TIGHT_BUBBLE = new EncounterConfig(true, true, true, false, true, 1.0, 8.0);
+    private static final EncounterConfig TIGHT_BUBBLE =
+            new EncounterConfig(true, true, true, false, true, true, 1.0, 8.0);
     private static final TurnConfig TURNS = new TurnConfig(true, 1000, 1000, 20.0, 12, false, false, false, Set.of());
 
     private HudScenarios() {}

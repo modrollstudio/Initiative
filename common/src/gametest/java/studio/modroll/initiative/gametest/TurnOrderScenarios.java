@@ -25,7 +25,8 @@ import studio.modroll.initiative.turn.TurnOrder;
  */
 public final class TurnOrderScenarios {
 
-    private static final EncounterConfig TIGHT_BUBBLE = new EncounterConfig(true, true, true, false, true, 1.0, 30.0);
+    private static final EncounterConfig TIGHT_BUBBLE =
+            new EncounterConfig(true, true, true, false, true, true, 1.0, 30.0);
     /** Freeze stays off here: M2a order semantics must hold without M2b's freeze in play. */
     private static final TurnConfig TURNS = new TurnConfig(true, 1000, 1000, 20.0, 12, false, false, false, Set.of());
 
