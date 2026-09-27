@@ -316,7 +316,11 @@ public final class ActionEconomy {
         ActionConfig actions = InitiativeConfig.actions();
         Grapples.reconcile(level, encounter);
         TurnBudget budget = budgetOf(encounter, current);
-        trackMovement(level, encounter, actor, budget);
+        if (encounter.movementAnchor() == null) {
+            encounter.setMovementAnchor(actor.position());
+        } else {
+            trackMovement(level, encounter, actor, budget);
+        }
         if (actor instanceof Mob mob) {
             driveMobTurn(level, encounter, mob, budget);
         }
@@ -333,10 +337,6 @@ public final class ActionEconomy {
     private static void trackMovement(ServerLevel level, Encounter encounter, LivingEntity actor, TurnBudget budget) {
         Vec3 pos = actor.position();
         Vec3 anchor = encounter.movementAnchor();
-        if (anchor == null) {
-            encounter.setMovementAnchor(pos);
-            return;
-        }
         double delta = Math.hypot(pos.x - anchor.x, pos.z - anchor.z);
         if (delta == 0.0) {
             return;
