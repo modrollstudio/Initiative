@@ -40,6 +40,9 @@ public final class RollAnimationRenderer {
     private static final int DROPPED_NUMBER = 0xFF8A8A93;
     private static final int ROLLER_NAME = 0xFFC8C8D2;
     private static final int NAME_GAP = 2;
+    /** The least space between the two sides' names, so they never read as one word. */
+    private static final int NAME_SPACING = 8;
+
     private static final int MAX_NAME_WIDTH = 64;
     private static final String ELLIPSIS = "…";
 
@@ -51,12 +54,16 @@ public final class RollAnimationRenderer {
         int y = graphics.guiHeight() - BOTTOM_MARGIN - DIE_SIZE;
         RollFrame.Die previous = null;
         int sideLeft = x;
+        int nameFloor = Integer.MIN_VALUE;
         for (RollFrame.Die die : frame.dice()) {
             if (previous != null) {
                 x += previous.side() == die.side() ? DIE_GAP : SIDE_GAP;
                 if (previous.side() != die.side()) {
-                    drawRollerName(graphics, font, previous, sideLeft, x - SIDE_GAP, y);
+                    int divider = x - SIDE_GAP / 2;
+                    drawRollerName(
+                            graphics, font, previous, sideLeft, x - SIDE_GAP, y, nameFloor, divider - NAME_SPACING / 2);
                     sideLeft = x;
+                    nameFloor = divider + NAME_SPACING / 2;
                 }
             }
             drawDie(graphics, font, die, x, y, frame.elapsedTicks());
@@ -64,18 +71,23 @@ public final class RollAnimationRenderer {
             previous = die;
         }
         if (previous != null) {
-            drawRollerName(graphics, font, previous, sideLeft, x, y);
+            drawRollerName(graphics, font, previous, sideLeft, x, y, nameFloor, Integer.MAX_VALUE);
         }
     }
 
-    /** One name per side, centered under that side's dice and cut short so it never widens the row. */
+    /**
+     * One name per side, centered under that side's dice and cut short so it never widens the row.
+     * A long name is pushed outward rather than past the middle of the gap between the sides, so the
+     * two names in a contest never run into each other.
+     */
     private static void drawRollerName(
-            GuiGraphics graphics, Font font, RollFrame.Die die, int left, int right, int top) {
+            GuiGraphics graphics, Font font, RollFrame.Die die, int left, int right, int top, int floor, int ceiling) {
         String name = shorten(font, die.roller());
+        int width = font.width(name);
         graphics.drawString(
                 font,
                 name,
-                (left + right - font.width(name)) / 2,
+                Math.max(floor, Math.min((left + right - width) / 2, ceiling - width)),
                 top + DIE_SIZE + NAME_GAP,
                 die.side() == RollFrame.Side.ACTOR ? ROLLER_NAME : DROPPED_NUMBER);
     }
