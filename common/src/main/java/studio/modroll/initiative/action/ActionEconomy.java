@@ -316,11 +316,7 @@ public final class ActionEconomy {
         ActionConfig actions = InitiativeConfig.actions();
         Grapples.reconcile(level, encounter);
         TurnBudget budget = budgetOf(encounter, current);
-        if (encounter.movementAnchor() == null) {
-            encounter.setMovementAnchor(actor.position());
-        } else {
-            trackMovement(level, encounter, actor, budget);
-        }
+        trackMovement(level, encounter, actor, budget);
         if (actor instanceof Mob mob) {
             driveMobTurn(level, encounter, mob, budget);
         }
@@ -332,11 +328,16 @@ public final class ActionEconomy {
     /**
      * Movement is measured horizontally against the last in-budget position; a tick that would
      * overshoot burns the remaining budget and reverts the actor — a hard stop at the edge.
-     * Vertical movement (falling, knockback) is free.
+     * Vertical movement is free. Re-anchor throughout the hurt window so knockback continuing
+     * into the actor's turn neither consumes movement nor gets reverted by an exhausted budget.
      */
     private static void trackMovement(ServerLevel level, Encounter encounter, LivingEntity actor, TurnBudget budget) {
         Vec3 pos = actor.position();
         Vec3 anchor = encounter.movementAnchor();
+        if (anchor == null || actor.hurtTime > 0) {
+            encounter.setMovementAnchor(pos);
+            return;
+        }
         double delta = Math.hypot(pos.x - anchor.x, pos.z - anchor.z);
         if (delta == 0.0) {
             return;

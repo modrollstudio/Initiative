@@ -149,23 +149,6 @@ class EncounterTest {
         assertNull(encounter.movementAnchor());
     }
 
-    @Test
-    void firstMovementAnchorIsSetAtTheActorsCurrentPositionAfterTurnReset() {
-        Encounter encounter = new Encounter(CENTER);
-        UUID actor = UUID.randomUUID();
-        encounter.budgetFor(1, actor, 6.0);
-        encounter.setMovementAnchor(new Vec3(1, 0, 1));
-
-        encounter.budgetFor(2, actor, 6.0);
-        Vec3 positionAfterForcedMovement = new Vec3(8, 0, 1);
-        if (encounter.movementAnchor() == null) {
-            encounter.setMovementAnchor(positionAfterForcedMovement);
-        }
-
-        assertEquals(positionAfterForcedMovement, encounter.movementAnchor());
-        assertEquals(6.0, encounter.budget().movementRemaining());
-    }
-
     /**
      * The leak check for per-encounter state: a participant that leaves must take everything the
      * encounter held about it — membership, join time, its turn-order slot, its last action-UI
