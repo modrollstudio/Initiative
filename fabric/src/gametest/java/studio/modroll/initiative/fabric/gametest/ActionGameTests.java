@@ -48,6 +48,16 @@ public class ActionGameTests implements FabricGameTest {
         ActionScenarios.movementBudgetIsConsumedAndEnforced(helper);
     }
 
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE, batch = "m3Knockback")
+    public void knockbackDuringNewTurnPreservesMovementBudget(GameTestHelper helper) {
+        ActionScenarios.knockbackDuringNewTurnPreservesMovementBudget(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE, batch = "m3ExhaustedKnockback")
+    public void knockbackWithExhaustedMovementIsNotClamped(GameTestHelper helper) {
+        ActionScenarios.knockbackWithExhaustedMovementIsNotClamped(helper);
+    }
+
     @GameTest(template = FabricGameTest.EMPTY_STRUCTURE, batch = "m3MobTurn")
     public void mobTurnDrivesItsAttackThroughTheApi(GameTestHelper helper) {
         ActionScenarios.mobTurnDrivesItsAttackThroughTheApi(helper);

@@ -54,6 +54,16 @@ public class ActionGameTests {
         ActionScenarios.movementBudgetIsConsumedAndEnforced(helper);
     }
 
+    @GameTest(template = TEMPLATE, batch = "m3Knockback")
+    public void knockbackDuringNewTurnPreservesMovementBudget(GameTestHelper helper) {
+        ActionScenarios.knockbackDuringNewTurnPreservesMovementBudget(helper);
+    }
+
+    @GameTest(template = TEMPLATE, batch = "m3ExhaustedKnockback")
+    public void knockbackWithExhaustedMovementIsNotClamped(GameTestHelper helper) {
+        ActionScenarios.knockbackWithExhaustedMovementIsNotClamped(helper);
+    }
+
     @GameTest(template = TEMPLATE, batch = "m3MobTurn")
     public void mobTurnDrivesItsAttackThroughTheApi(GameTestHelper helper) {
         ActionScenarios.mobTurnDrivesItsAttackThroughTheApi(helper);

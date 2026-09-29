@@ -296,6 +296,70 @@ public final class ActionScenarios {
                 .thenSucceed();
     }
 
+    public static void knockbackDuringNewTurnPreservesMovementBudget(GameTestHelper helper) {
+        prepare(helper, ACTIONS);
+        Player player = ScenarioSupport.spawnPlayer(helper, 2.0, 2.5);
+        Husk husk = ScenarioSupport.spawnHusk(helper, 2, 1);
+        ScenarioSupport.formEncounter(helper, player, HUSK_FIRST, husk);
+        Encounter encounter = encounterOf(helper, player);
+        ScenarioSupport.forceCountedDice(true);
+        try {
+            ActionEconomy.tick(helper.getLevel(), encounter);
+        } finally {
+            RollService.resetRoller();
+        }
+        if (!player.getUUID().equals(encounter.turnOrder().currentTurn().orElse(null)) || player.hurtTime <= 0) {
+            helper.fail("the mob's hit must pass the turn to the player while the player is still hurt");
+        }
+        ActionEconomy.tick(helper.getLevel(), encounter);
+        Vec3 start = player.position();
+        for (int step = 1; step <= 2; step++) {
+            player.hurtTime = 3 - step;
+            Vec3 displaced = start.add(step * 2.0, 0, 0);
+            player.moveTo(displaced.x, displaced.y, displaced.z, 0, 0);
+            ActionEconomy.tick(helper.getLevel(), encounter);
+            if (Math.abs(encounter.budget().movementRemaining() - 6.0) > 1.0e-6) {
+                helper.fail("knockback continuing into the player's turn must not spend movement");
+            }
+            if (!displaced.equals(encounter.movementAnchor())) {
+                helper.fail("each hurt tick must re-anchor movement at the displaced position");
+            }
+        }
+        player.hurtTime = 0;
+        player.moveTo(start.x + 5, start.y, start.z, 0, 0);
+        ActionEconomy.tick(helper.getLevel(), encounter);
+        if (Math.abs(encounter.budget().movementRemaining() - 5.0) > 1.0e-6) {
+            helper.fail("walking after knockback must spend only the distance since the last hurt tick");
+        }
+        cleanUp(player, husk);
+        helper.succeed();
+    }
+
+    public static void knockbackWithExhaustedMovementIsNotClamped(GameTestHelper helper) {
+        prepare(helper, ACTIONS);
+        Player player = ScenarioSupport.spawnPlayer(helper, 1, 1);
+        Husk husk = ScenarioSupport.spawnHusk(helper, 3, 3);
+        ScenarioSupport.formEncounter(helper, player, PLAYER_FIRST, husk);
+        Encounter encounter = encounterOf(helper, player);
+        ActionEconomy.tick(helper.getLevel(), encounter);
+        encounter.budget().consumeMovement(6.0);
+        Vec3 displaced = player.position().add(3, 0, 0);
+        player.hurtTime = 1;
+        player.moveTo(displaced.x, displaced.y, displaced.z, 0, 0);
+        ActionEconomy.tick(helper.getLevel(), encounter);
+        if (!displaced.equals(player.position()) || !displaced.equals(encounter.movementAnchor())) {
+            helper.fail("an exhausted budget must not revert knockback or retain the pre-hit anchor");
+        }
+        player.hurtTime = 0;
+        player.moveTo(displaced.x + 1, displaced.y, displaced.z, 0, 0);
+        ActionEconomy.tick(helper.getLevel(), encounter);
+        if (!displaced.equals(player.position()) || !encounter.budget().movementExhausted()) {
+            helper.fail("ordinary movement must still be clamped after knockback ends");
+        }
+        cleanUp(player, husk);
+        helper.succeed();
+    }
+
     public static void mobTurnDrivesItsAttackThroughTheApi(GameTestHelper helper) {
         prepare(helper, ACTIONS);
         // Inside the husk's melee reach: it spawns at the block center (2.5, 1.5).
