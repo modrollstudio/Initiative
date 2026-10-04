@@ -33,6 +33,7 @@ import net.minecraft.world.phys.EntityHitResult;
 import studio.modroll.initiative.Initiative;
 import studio.modroll.initiative.action.ActionEconomy;
 import studio.modroll.initiative.action.ActionSettingsLoader;
+import studio.modroll.initiative.checks.ChecksIntegration;
 import studio.modroll.initiative.command.InitiativeCommands;
 import studio.modroll.initiative.encounter.EncounterManager;
 import studio.modroll.initiative.hud.TurnOrderPayload;
@@ -59,6 +60,7 @@ public final class InitiativeFabric implements ModInitializer {
     @Override
     public void onInitialize() {
         Initiative.init(FabricLoader.getInstance().getConfigDir());
+        ChecksIntegration.setPresent(FabricLoader.getInstance().isModLoaded(ChecksIntegration.MOD_ID));
         PayloadTypeRegistry.playS2C().register(TurnOrderPayload.TYPE, TurnOrderPayload.STREAM_CODEC);
         PayloadTypeRegistry.playS2C().register(RollAnimationPayload.TYPE, RollAnimationPayload.STREAM_CODEC);
         PayloadTypeRegistry.playS2C().register(ActionUiPayload.TYPE, ActionUiPayload.STREAM_CODEC);

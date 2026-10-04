@@ -10,6 +10,9 @@ save, crit, and fumble is resolved by Critfall through its public API; Initiativ
 
 **Requires Critfall.** Fully optional the other way around: Critfall works standalone.
 
+**Works with Critfall: Checks** (optional). With it installed, Shove, Grapple, Escape and Hide roll
+the participants' skills instead of flat bonuses; see [actions](docs/actions.md#with-checks-installed).
+
 ## Install
 
 - Minecraft 1.21.1 with NeoForge 21.1+, or Fabric Loader 0.16.9+ with Fabric API
@@ -37,7 +40,9 @@ covers each key, and the other pages in [docs](docs) cover each system.
 ## Building
 
 Critfall is consumed from the [Modrinth maven](https://api.modrinth.com/maven) under the
-`maven.modrinth:critfall` coordinates pinned in `gradle.properties`, so no local publish is needed:
+`maven.modrinth:critfall` coordinates pinned in `gradle.properties`. Checks is not on Modrinth yet,
+so its jars (`studio.modroll.checks:checks-*`, `checks_version` in `gradle.properties`) come from
+your local Maven repo: publish them from the Checks repo before building.
 
 ```
 ./gradlew check    # unit tests + spotless

@@ -308,6 +308,7 @@ public final class GrappleScenarios {
         InitiativeConfig.overrideEncountersForTesting(TIGHT_BUBBLE);
         InitiativeConfig.overrideTurnsForTesting(TURNS);
         InitiativeConfig.overrideActionsForTesting(ACTIONS);
+        InitiativeConfig.overrideChecksForTesting(ScenarioSupport.CHECKS_OFF);
         InitiativeConfig.overrideGrappleForTesting(grapple);
         InitiativeConfig.overrideCoverForTesting(ScenarioSupport.COVER_OFF);
         InitiativeConfig.overrideActionUiForTesting(new ActionUiConfig(true));

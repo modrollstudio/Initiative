@@ -1,6 +1,18 @@
 # Changelog
 
-## Unreleased
+## [Unreleased]
+
+- **Shove, Grapple, Escape and Hide roll real skills with Critfall: Checks.** Their contests used
+  flat config bonuses, the same for every participant. With Checks installed they now roll each
+  side's own skills through it. Shove and Grapple are your Athletics against the target's Athletics
+  or Acrobatics, whichever is higher. Escape is your Athletics or Acrobatics, whichever is higher,
+  against the grappler's Athletics. Hide is no longer a contest: you roll Stealth, you are hidden,
+  and the total is kept. On each enemy's turn its passive Perception is checked against that total,
+  and if it meets or beats it you are revealed. Attacking, being hit and leaving still reveal you as
+  before. The Stealth roll gets its own single-die check animation, and the contests animate as
+  before. Checks stays optional: without it, nothing changes and none of its classes load. New
+  `checks.enabled` (default on); off restores the flat bonuses even with Checks installed. Reel
+  keeps its flat bonuses.
 
 - **Encounters no longer pull mobs or players through walls.** Anyone inside `trigger_radius`
   joined the fight, solid blocks or not, so a dungeon fight dragged in the mobs from the

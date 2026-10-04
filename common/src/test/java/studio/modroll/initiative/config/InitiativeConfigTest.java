@@ -35,6 +35,7 @@ class InitiativeConfigTest {
         assertTrue(InitiativeConfig.rollAnimation().enabled());
         assertTrue(InitiativeConfig.rollAnimation().totalTicks() > 0);
         assertTrue(InitiativeConfig.rollAnimation().sharedVisibility());
+        assertTrue(InitiativeConfig.checks().enabled());
     }
 
     @Test

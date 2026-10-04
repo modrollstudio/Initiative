@@ -28,6 +28,10 @@ subprojects {
             url = 'https://api.modrinth.com/maven'
             content { includeGroup 'maven.modrinth' }
         }
+        // TODO: switch Checks to the Modrinth maven once it is published there.
+        mavenLocal {
+            content { includeGroup 'studio.modroll.checks' }
+        }
     }
 
     dependencies {

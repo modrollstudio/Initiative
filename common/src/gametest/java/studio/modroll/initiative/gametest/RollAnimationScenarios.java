@@ -279,6 +279,7 @@ public final class RollAnimationScenarios {
         InitiativeConfig.overrideEncountersForTesting(TIGHT_BUBBLE);
         InitiativeConfig.overrideTurnsForTesting(TURNS);
         InitiativeConfig.overrideActionsForTesting(actions);
+        InitiativeConfig.overrideChecksForTesting(ScenarioSupport.CHECKS_OFF);
         InitiativeConfig.overrideGrappleForTesting(ScenarioSupport.GRAPPLE_DEFAULT);
         InitiativeConfig.overrideCoverForTesting(ScenarioSupport.COVER_OFF);
         InitiativeConfig.overrideRollAnimationForTesting(animation);

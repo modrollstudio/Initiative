@@ -19,6 +19,7 @@ import studio.modroll.critfall.api.RollService;
 import studio.modroll.critfall.api.dice.DiceRoller;
 import studio.modroll.initiative.action.ActionEconomy.AttackStatus;
 import studio.modroll.initiative.config.ActionConfig;
+import studio.modroll.initiative.config.ChecksConfig;
 import studio.modroll.initiative.config.CoverConfig;
 import studio.modroll.initiative.config.GrappleConfig;
 
@@ -47,6 +48,12 @@ final class ScenarioSupport {
      * overrides persist across batches.
      */
     static final GrappleConfig GRAPPLE_DEFAULT = new GrappleConfig(true, 3.0, 0, 0, 5.0, true, 0, 0);
+
+    /**
+     * The GameTest runs have Checks installed, so every suite whose contests or Hide assert flat-bonus
+     * outcomes pins the integration off; the Checks suite pins it on.
+     */
+    static final ChecksConfig CHECKS_OFF = new ChecksConfig(false);
 
     private ScenarioSupport() {}
 
