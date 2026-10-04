@@ -103,6 +103,17 @@ class RollAnimationTest {
         assertTrue(animation.opponent().isEmpty());
     }
 
+    @Test
+    void aSkillCheckIsASingleUnopposedDieThatSurvivesTheWire() {
+        RollAnimation animation = RollAnimation.check(RollDetail.normal(12), ROLLER);
+        assertEquals(Kind.CHECK, animation.kind());
+        assertEquals(12, animation.actor().detail().kept());
+        assertTrue(animation.opponent().isEmpty());
+        FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+        RollAnimation.STREAM_CODEC.encode(buf, animation);
+        assertEquals(animation, RollAnimation.STREAM_CODEC.decode(buf));
+    }
+
     /** Everyone in the encounter watches, so the wire must say whose die each one is. */
     @Test
     void everySidesRollerSurvivesTheWire() {

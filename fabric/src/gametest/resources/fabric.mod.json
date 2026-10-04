@@ -26,7 +26,8 @@
       "studio.modroll.initiative.fabric.gametest.OffTurnGameTests",
       "studio.modroll.initiative.fabric.gametest.ProvocationGameTests",
       "studio.modroll.initiative.fabric.gametest.ConcealmentGameTests",
-      "studio.modroll.initiative.fabric.gametest.RangedGameTests"
+      "studio.modroll.initiative.fabric.gametest.RangedGameTests",
+      "studio.modroll.initiative.fabric.gametest.ChecksGameTests"
     ]
   },
   "depends": {

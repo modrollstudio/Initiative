@@ -1,8 +1,10 @@
 package studio.modroll.initiative.action;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
@@ -146,6 +148,40 @@ class EncounterFlagsTest {
         assertFalse(flags.isHidden(hider));
     }
 
+    @Test
+    void aStealthHideKeepsItsTotalWhileHidden() {
+        EncounterFlags flags = new EncounterFlags();
+        UUID hider = UUID.randomUUID();
+        flags.setHidden(hider, 17);
+        assertTrue(flags.isHidden(hider));
+        assertEquals(Map.of(hider, 17), flags.hiddenStealth());
+        flags.beginTurn(hider);
+        assertEquals(Map.of(hider, 17), flags.hiddenStealth());
+    }
+
+    @Test
+    void everyWayOutOfHidingDropsTheStealthTotal() {
+        EncounterFlags flags = new EncounterFlags();
+        UUID hider = UUID.randomUUID();
+        flags.setHidden(hider, 17);
+        flags.consumeHidden(hider);
+        assertTrue(flags.hiddenStealth().isEmpty());
+        flags.setHidden(hider, 17);
+        flags.breakHidden(hider);
+        assertTrue(flags.hiddenStealth().isEmpty());
+    }
+
+    /** A flat Hide has no Stealth total, so it must not inherit one from an earlier Checks Hide. */
+    @Test
+    void aFlatHideReplacesAStoredStealthTotal() {
+        EncounterFlags flags = new EncounterFlags();
+        UUID hider = UUID.randomUUID();
+        flags.setHidden(hider, 17);
+        flags.setHidden(hider);
+        assertTrue(flags.isHidden(hider));
+        assertTrue(flags.hiddenStealth().isEmpty());
+    }
+
     /**
      * The leak check for per-participant state: every flag this class can hold is raised, in both
      * directions where a flag names two participants, and removal must leave nothing behind. A field
@@ -158,7 +194,7 @@ class EncounterFlagsTest {
         UUID other = UUID.randomUUID();
         flags.setDodging(leaver);
         flags.setDisengaged(leaver);
-        flags.setHidden(leaver);
+        flags.setHidden(leaver, 17);
         flags.useReaction(leaver);
         flags.grantHelpAdvantage(leaver, other);
         flags.grantHelpAdvantage(other, leaver);
@@ -170,6 +206,7 @@ class EncounterFlagsTest {
         assertFalse(flags.isDodging(leaver));
         assertFalse(flags.isDisengaged(leaver));
         assertFalse(flags.isHidden(leaver));
+        assertTrue(flags.hiddenStealth().isEmpty());
         assertTrue(flags.hasReaction(leaver));
         assertFalse(flags.hasHelpAdvantage(leaver));
         assertFalse(flags.hasHelpAdvantage(other));

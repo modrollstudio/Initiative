@@ -32,6 +32,9 @@ dependencies {
     // modImplementation has Loom remap it to named for dev runs and load it as a mod. The version
     // here is a Modrinth version id — see the note in gradle.properties.
     modImplementation "maven.modrinth:critfall:${critfall_fabric_modrinth_id}"
+
+    // Checks on the dev runs only, so the GameTests exercise the Checks path; never a compile dependency.
+    modRuntimeOnly "studio.modroll.checks:checks-fabric:${checks_version}"
 }
 
 loom {
@@ -90,6 +93,7 @@ processResources {
             minecraft_version_range: minecraft_version_range,
             fabric_loader_version  : fabric_loader_version,
             critfall_version       : critfall_version,
+            checks_version         : checks_version,
     ]
     inputs.properties props
     filesMatching(['fabric.mod.json', 'pack.mcmeta']) {

@@ -581,6 +581,7 @@ public final class MultiplayerScenarios {
         InitiativeConfig.overrideEncountersForTesting(TIGHT_BUBBLE);
         InitiativeConfig.overrideTurnsForTesting(turns);
         InitiativeConfig.overrideActionsForTesting(actions);
+        InitiativeConfig.overrideChecksForTesting(ScenarioSupport.CHECKS_OFF);
         InitiativeConfig.overrideGrappleForTesting(ScenarioSupport.GRAPPLE_DEFAULT);
         InitiativeConfig.overrideCoverForTesting(ScenarioSupport.COVER_OFF);
         InitiativeConfig.overrideActionUiForTesting(new ActionUiConfig(true));

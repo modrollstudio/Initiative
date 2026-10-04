@@ -16,18 +16,24 @@ import studio.modroll.critfall.api.ContestContext;
 import studio.modroll.critfall.api.RollService;
 import studio.modroll.critfall.api.combat.AttackResult;
 import studio.modroll.critfall.api.combat.ContestResult;
+import studio.modroll.critfall.api.dice.RollDetail;
 import studio.modroll.critfall.api.dice.RollMode;
+import studio.modroll.critfall.api.dice.RollResult;
 import studio.modroll.initiative.api.ActionContext;
 import studio.modroll.initiative.api.ActionRegistry;
 import studio.modroll.initiative.api.ActionRequest;
 import studio.modroll.initiative.api.ActionResult;
 import studio.modroll.initiative.api.ActionStatus;
+import studio.modroll.initiative.checks.ChecksBridge;
+import studio.modroll.initiative.checks.ChecksIntegration;
 import studio.modroll.initiative.config.ActionConfig;
 import studio.modroll.initiative.config.CoverConfig;
 import studio.modroll.initiative.config.InitiativeConfig;
 import studio.modroll.initiative.encounter.Encounter;
 import studio.modroll.initiative.encounter.EncounterManager;
 import studio.modroll.initiative.encounter.Provocation;
+import studio.modroll.initiative.roll.RollAnimation;
+import studio.modroll.initiative.roll.RollAnimationSync;
 
 /**
  * The turn actions and the per-tick turn reconcile. Every action runs through
@@ -215,8 +221,15 @@ public final class ActionEconomy {
         return ActionResult.performed();
     }
 
-    /** Hide: a Stealth-vs-Perception contest against the nearest hostile observer. */
+    /**
+     * Hide: a Stealth-vs-Perception contest against the nearest hostile observer. With Checks active
+     * the hider instead rolls Stealth and always hides; the total is kept for {@link PassivePerception}
+     * to check each enemy against on its turn.
+     */
     static ActionResult performHide(ActionContext context) {
+        if (ChecksIntegration.active()) {
+            return hideWithStealthCheck(context);
+        }
         LivingEntity actor = context.actor();
         LivingEntity observer = nearestEnemy(context);
         boolean hidden = observer == null || hideContestWon(context, observer, InitiativeConfig.actions());
@@ -224,6 +237,17 @@ public final class ActionEconomy {
             flagsOf(context).setHidden(actor.getUUID());
         }
         return ActionResult.performed(hidden);
+    }
+
+    /** Unopposed, so the roll is shown straight through the sync: no opponent for {@code showRoll}. */
+    private static ActionResult hideWithStealthCheck(ActionContext context) {
+        LivingEntity actor = context.actor();
+        RollResult stealth = ChecksBridge.stealthCheck(actor);
+        RollDetail roll = RollDetail.of(RollMode.NORMAL, stealth);
+        RollAnimationSync.play(
+                actor, RollAnimation.check(roll, actor.getDisplayName().getString()));
+        flagsOf(context).setHidden(actor.getUUID(), stealth.total());
+        return ActionResult.performed(true);
     }
 
     static ActionResult performEndTurn(ActionContext context) {
@@ -315,6 +339,7 @@ public final class ActionEconomy {
         }
         ActionConfig actions = InitiativeConfig.actions();
         Grapples.reconcile(level, encounter);
+        PassivePerception.revealHidersSpottedBy(encounter, actor);
         TurnBudget budget = budgetOf(encounter, current);
         trackMovement(level, encounter, actor, budget);
         if (actor instanceof Mob mob) {

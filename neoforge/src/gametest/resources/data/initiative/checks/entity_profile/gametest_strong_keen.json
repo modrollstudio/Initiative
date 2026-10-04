@@ -1,0 +1,14 @@
+{
+  "format_version": 1,
+  "matches": [
+    "minecraft:vindicator"
+  ],
+  "abilities": {
+    "str": 16,
+    "dex": 8,
+    "wis": 20
+  },
+  "skills": {
+    "perception": 2
+  }
+}

@@ -18,15 +18,19 @@ import studio.modroll.initiative.api.ActionRegistry;
 import studio.modroll.initiative.api.ActionRequest;
 import studio.modroll.initiative.api.ActionResult;
 import studio.modroll.initiative.api.ActionStatus;
+import studio.modroll.initiative.checks.ChecksBridge;
+import studio.modroll.initiative.checks.ChecksIntegration;
 import studio.modroll.initiative.config.ActionConfig;
 import studio.modroll.initiative.config.GrappleConfig;
 import studio.modroll.initiative.config.InitiativeConfig;
 
 /**
  * The contested melee actions. Shove, Reel and Grapple all resolve through Critfall's
- * {@code RollService.contest} (actor is the initiator, target the opponent); Shove and Reel apply
- * vanilla knockback so falls, lava and cliffs behave naturally, while Grapple applies a condition
- * that holds the target in place until it escapes or the hold breaks. They are ordinary registry
+ * {@code RollService.contest} (actor is the initiator, target the opponent); with Checks active,
+ * Shove, Grapple and Escape roll the participants' Athletics and Acrobatics through Checks instead
+ * of the flat config bonuses. Shove and Reel apply vanilla knockback so falls, lava and cliffs
+ * behave naturally, while Grapple applies a condition that holds the target in place until it
+ * escapes or the hold breaks. They are ordinary registry
  * entries; the methods here are the callers' front door and narrow the registry status back down.
  */
 public final class NativeActions {
@@ -74,7 +78,7 @@ public final class NativeActions {
     static ActionResult performShove(ActionContext context) {
         ActionConfig actions = InitiativeConfig.actions();
         LivingEntity target = context.target().orElseThrow();
-        boolean won = contestWon(context, target, actions.shoveAttackerBonus(), actions.shoveDefenderBonus());
+        boolean won = athleticsContestWon(context, target, actions.shoveAttackerBonus(), actions.shoveDefenderBonus());
         if (won) {
             knockAwayFrom(target, context.actor().position(), actions.shoveKnockbackStrength());
         }
@@ -120,7 +124,7 @@ public final class NativeActions {
         if (!hasFreeHand(actor)) {
             return ActionResult.rejected(ActionStatus.HANDS_FULL);
         }
-        boolean won = contestWon(context, target, grapple.attackerBonus(), grapple.defenderBonus());
+        boolean won = athleticsContestWon(context, target, grapple.attackerBonus(), grapple.defenderBonus());
         if (won) {
             Grapples.hold(context.level(), target, actor);
         }
@@ -138,7 +142,7 @@ public final class NativeActions {
         if (grappler == null) {
             return ActionResult.rejected(ActionStatus.INVALID_TARGET);
         }
-        boolean won = contestWon(context, grappler, grapple.escapeAttackerBonus(), grapple.escapeDefenderBonus());
+        boolean won = escapeContestWon(context, grappler, grapple);
         if (won) {
             Grapples.release(context.level(), actor);
             context.grantMovement(InitiativeConfig.actions().movementBudgetBlocks());
@@ -193,9 +197,29 @@ public final class NativeActions {
     }
 
     private static boolean contestWon(ActionContext context, LivingEntity target, int actorBonus, int defenderBonus) {
-        ContestResult result =
-                RollService.contest(context.actor(), target, ContestContext.of(actorBonus, defenderBonus));
-        context.showRoll(result, target);
+        return shownWon(
+                context,
+                target,
+                RollService.contest(context.actor(), target, ContestContext.of(actorBonus, defenderBonus)));
+    }
+
+    private static boolean athleticsContestWon(
+            ActionContext context, LivingEntity target, int actorBonus, int defenderBonus) {
+        if (!ChecksIntegration.active()) {
+            return contestWon(context, target, actorBonus, defenderBonus);
+        }
+        return shownWon(context, target, ChecksBridge.athleticsContest(context.actor(), target));
+    }
+
+    private static boolean escapeContestWon(ActionContext context, LivingEntity grappler, GrappleConfig grapple) {
+        if (!ChecksIntegration.active()) {
+            return contestWon(context, grappler, grapple.escapeAttackerBonus(), grapple.escapeDefenderBonus());
+        }
+        return shownWon(context, grappler, ChecksBridge.escapeContest(context.actor(), grappler));
+    }
+
+    private static boolean shownWon(ActionContext context, LivingEntity opponent, ContestResult result) {
+        context.showRoll(result, opponent);
         return result.initiatorWins();
     }
 

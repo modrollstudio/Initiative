@@ -22,7 +22,8 @@ public record RollAnimation(Kind kind, Roll actor, Optional<Roll> opponent) {
     public enum Kind {
         ATTACK,
         CONTEST,
-        INITIATIVE
+        INITIATIVE,
+        CHECK
     }
 
     public enum Emphasis {
@@ -70,6 +71,11 @@ public record RollAnimation(Kind kind, Roll actor, Optional<Roll> opponent) {
 
     public static RollAnimation initiative(RollDetail detail, String roller) {
         return new RollAnimation(Kind.INITIATIVE, roll(detail, roller), Optional.empty());
+    }
+
+    /** An unopposed skill check, such as the Stealth roll a Hide makes with Checks. */
+    public static RollAnimation check(RollDetail detail, String roller) {
+        return new RollAnimation(Kind.CHECK, roll(detail, roller), Optional.empty());
     }
 
     /** Outside an attack there is no Critfall outcome to read, so the die's own extremes carry the drama. */

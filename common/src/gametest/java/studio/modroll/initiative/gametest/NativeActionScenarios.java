@@ -367,6 +367,7 @@ public final class NativeActionScenarios {
         InitiativeConfig.overrideEncountersForTesting(TIGHT_BUBBLE);
         InitiativeConfig.overrideTurnsForTesting(TURNS);
         InitiativeConfig.overrideActionsForTesting(actions);
+        InitiativeConfig.overrideChecksForTesting(ScenarioSupport.CHECKS_OFF);
         InitiativeConfig.overrideGrappleForTesting(ScenarioSupport.GRAPPLE_DEFAULT);
         ScenarioSupport.discardLeftoverHostilesNearby(helper);
     }
