@@ -328,12 +328,13 @@ public final class ActionEconomy {
     /**
      * Movement is measured horizontally against the last in-budget position; a tick that would
      * overshoot burns the remaining budget and reverts the actor — a hard stop at the edge.
-     * Vertical movement (falling, knockback) is free.
+     * Vertical movement is free. Re-anchor throughout the hurt window so knockback continuing
+     * into the actor's turn neither consumes movement nor gets reverted by an exhausted budget.
      */
     private static void trackMovement(ServerLevel level, Encounter encounter, LivingEntity actor, TurnBudget budget) {
         Vec3 pos = actor.position();
         Vec3 anchor = encounter.movementAnchor();
-        if (anchor == null) {
+        if (anchor == null || actor.hurtTime > 0) {
             encounter.setMovementAnchor(pos);
             return;
         }

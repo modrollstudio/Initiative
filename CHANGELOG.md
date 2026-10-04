@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.1] - 2026-09-27
+
+- **Contested roll names no longer run together.** In a contested roll each side's name is centered
+  under its dice, so two long names met in the gap between the sides and read as one word. A long
+  name is now pushed outward instead of past the middle of that gap, keeping the two names apart.
+
 ## [0.1.0] - 2026-09-26
 
 - **First public release.** The loader jars are versioned `0.1.0+neoforge` and `0.1.0+fabric`, so
