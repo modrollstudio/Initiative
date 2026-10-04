@@ -83,5 +83,8 @@
     "face_change_ticks": 2,
     "hold_readout": true,
     "shared_visibility": true
+  },
+  "checks": {
+    "enabled": true
   }
 }

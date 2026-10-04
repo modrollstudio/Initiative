@@ -25,6 +25,9 @@ dependencies {
     compileOnly "maven.modrinth:critfall:${critfall_version}"
     testImplementation "maven.modrinth:critfall:${critfall_version}"
     gametestCompileOnly "maven.modrinth:critfall:${critfall_version}"
+
+    // Checks is a soft dependency: only the bridge in studio.modroll.initiative.checks touches its API.
+    compileOnly "studio.modroll.checks:checks-common:${checks_version}"
 }
 
 processResources {

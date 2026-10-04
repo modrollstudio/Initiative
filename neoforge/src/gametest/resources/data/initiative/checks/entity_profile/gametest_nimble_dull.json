@@ -1,0 +1,14 @@
+{
+  "format_version": 1,
+  "matches": [
+    "minecraft:spider"
+  ],
+  "abilities": {
+    "str": 10,
+    "dex": 18,
+    "wis": 4
+  },
+  "skills": {
+    "acrobatics": 2
+  }
+}

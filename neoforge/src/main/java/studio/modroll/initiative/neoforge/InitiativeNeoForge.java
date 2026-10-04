@@ -9,6 +9,7 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.bus.api.ICancellableEvent;
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforge.common.NeoForge;
@@ -31,6 +32,7 @@ import studio.modroll.initiative.action.ActionEconomy;
 import studio.modroll.initiative.action.ActionSettingsLoader;
 import studio.modroll.initiative.action.BlockPlacement;
 import studio.modroll.initiative.action.Concealment;
+import studio.modroll.initiative.checks.ChecksIntegration;
 import studio.modroll.initiative.command.InitiativeCommands;
 import studio.modroll.initiative.encounter.EncounterManager;
 import studio.modroll.initiative.encounter.Provocation;
@@ -60,6 +62,7 @@ public final class InitiativeNeoForge {
 
     public InitiativeNeoForge(IEventBus modBus) {
         Initiative.init(FMLPaths.CONFIGDIR.get());
+        ChecksIntegration.setPresent(ModList.get().isLoaded(ChecksIntegration.MOD_ID));
         TurnOrderSync.setSender(InitiativeNeoForge::sendTurnOrder);
         RollAnimationSync.setSender(InitiativeNeoForge::sendRollAnimation);
         ActionUiSync.setSender(InitiativeNeoForge::sendActionUi);

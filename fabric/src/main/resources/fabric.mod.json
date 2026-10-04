@@ -25,5 +25,8 @@
     "java": ">=21",
     "fabric-api": "*",
     "critfall": ">=${critfall_version}"
+  },
+  "suggests": {
+    "checks": ">=${checks_version}"
   }
 }

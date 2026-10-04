@@ -113,6 +113,9 @@ Example (see [examples/initiative.json](examples/initiative.json)):
     "face_change_ticks": 2,
     "hold_readout": true,
     "shared_visibility": true
+  },
+  "checks": {
+    "enabled": true
   }
 }
 ```
@@ -171,14 +174,14 @@ See [actions](actions.md) for the mechanics.
 | `hide` | boolean | Feature toggle for the Hide action (M4b). Off = Hide is unavailable. |
 | `opportunity_attack` | boolean | Feature toggle for opportunity attacks (M4b). Off = opportunity attacks are unavailable. |
 | `opportunity_attack_reach_blocks` | number ≥ 0 | Horizontal distance (blocks) at which a hostile provokes opportunity attacks (default 3 ≈ 15 ft). |
-| `hide_observer_perception_bonus` | integer | Flat bonus added to the nearest hostile observer's roll in the Hide contest (default 0). Placeholder until the Checks mod. |
+| `hide_observer_perception_bonus` | integer | Flat bonus added to the nearest hostile observer's roll in the Hide contest (default 0). Unused while [Checks](#checks) drives Hide. |
 | `hide_stealth_bonus` | integer | Bonus added to your Stealth check roll (`d20 + hide_stealth_bonus`, default 0). |
 | `hide_suppresses_targeting` | boolean | Whether being hidden also hides you from mob AI (default on). Off = Hide keeps its roll effects only, and mobs see, path to and target a hidden participant exactly as before. |
 | `shove` | boolean | Feature toggle for the Shove action (M5a). Off = Shove is unavailable. |
 | `shove_reach_blocks` | number ≥ 0 | Horizontal distance at which you can shove a target (default 3). |
 | `shove_knockback_strength` | number ≥ 0 | Vanilla knockback impulse applied on a won shove (default 1.0). |
-| `shove_attacker_bonus` | integer | Flat bonus on your Shove contest roll (default 0). Placeholder until the Checks mod. |
-| `shove_defender_bonus` | integer | Flat bonus on the target's Shove contest roll (default 0). Placeholder. |
+| `shove_attacker_bonus` | integer | Flat bonus on your Shove contest roll (default 0). Unused while [Checks](#checks) drives Shove. |
+| `shove_defender_bonus` | integer | Flat bonus on the target's Shove contest roll (default 0). Unused while Checks drives Shove. |
 | `ender_pearl_blink` | boolean | Feature toggle for the ender-pearl blink (M5a). Off = unavailable. |
 | `blink_max_blocks` | number ≥ 0 | Max horizontal teleport distance for the blink (default 8). |
 | `fishing_rod_reel` | boolean | Feature toggle for the Reel action, the fishing-rod pull (M5a; called `fishing_rod_grapple` before M8). Off = unavailable. |
@@ -223,12 +226,12 @@ The unarmed grapple and the escape from it (M8). See [actions](actions.md#grappl
 |---|---|---|
 | `enabled` | boolean | Feature toggle for the Grapple action. Off = Grapple is unavailable; nothing else changes. |
 | `reach_blocks` | number ≥ 0 | Horizontal distance at which you can take hold (default 3). |
-| `attacker_bonus` | integer | Flat bonus on your grapple contest roll (default 0). Placeholder until the Checks mod. |
-| `defender_bonus` | integer | Flat bonus on the target's grapple contest roll (default 0). Placeholder. |
+| `attacker_bonus` | integer | Flat bonus on your grapple contest roll (default 0). Unused while [Checks](#checks) drives Grapple. |
+| `defender_bonus` | integer | Flat bonus on the target's grapple contest roll (default 0). Unused while Checks drives Grapple. |
 | `break_distance_blocks` | number ≥ `reach_blocks` | The hold breaks once the two are further apart than this (default 5). |
 | `escape` | boolean | Feature toggle for the Escape action. Off = a hold can only end by breaking or by a side leaving. |
-| `escape_attacker_bonus` | integer | Flat bonus on the escaping participant's contest roll (default 0). Placeholder. |
-| `escape_defender_bonus` | integer | Flat bonus on the grappler's contest roll (default 0). Placeholder. |
+| `escape_attacker_bonus` | integer | Flat bonus on the escaping participant's contest roll (default 0). Unused while Checks drives Escape. |
+| `escape_defender_bonus` | integer | Flat bonus on the grappler's contest roll (default 0). Unused while Checks drives Escape. |
 
 ## `hud`
 
@@ -258,6 +261,14 @@ See [rolls](rolls.md) for what animates and who sees it.
 | `face_change_ticks` | integer ≥ 1 | Ticks between face changes while tumbling (default 2). |
 | `hold_readout` | boolean | On (default): an action-bar readout landing mid-tumble is held client-side until the dice settle, so the text cannot spoil the roll. Off = readout shows immediately. |
 | `shared_visibility` | boolean | On (default, M9): every player in the encounter watches every roll, each side of the animation naming its roller. Off = the M6 audience, the one player at the exchange. |
+
+## `checks`
+
+The optional [Critfall: Checks](actions.md#with-checks-installed) integration.
+
+| Field | Type | Meaning |
+|---|---|---|
+| `enabled` | boolean | On (default): with Checks installed, Shove, Grapple, Escape and Hide roll the participants' own skills through Checks instead of the flat config bonuses. Off, or without Checks installed: the flat bonuses, exactly as before. |
 
 The checks each value must pass: `trigger_radius` must be positive and `leave_radius` at least
 `trigger_radius`; both turn timeouts must be positive and the two initiative values must not be

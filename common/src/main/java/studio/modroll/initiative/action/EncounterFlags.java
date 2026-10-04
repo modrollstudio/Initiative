@@ -13,7 +13,8 @@ import java.util.UUID;
  * The reaction refreshes at the participant's own turn start (5e), unlike the dodge/disengage
  * flags which lapse. Hidden, by contrast, is a persistent condition — unlike dodge/disengage it
  * does NOT lapse at the hider's next turn start; it clears only when the hider attacks, is hit, or
- * is removed from the encounter. A grapple is a condition too, held on the grappled participant
+ * is removed from the encounter. A hider that hid with a Checks Stealth roll keeps its total while
+ * hidden, for enemies' passive Perception to be checked against. A grapple is a condition too, held on the grappled participant
  * against its grappler: it survives both their turns and clears only on an escape, a break, or
  * either side leaving.
  * Kept off {@link TurnBudget}, which only ever holds the acting participant — these flags outlive
@@ -26,6 +27,7 @@ public final class EncounterFlags {
     private final Map<UUID, UUID> helpAdvantageByAlly = new HashMap<>();
     private final Set<UUID> reactionUsed = new HashSet<>();
     private final Set<UUID> hidden = new HashSet<>();
+    private final Map<UUID, Integer> stealthByHider = new HashMap<>();
     private final Map<UUID, UUID> grappledBy = new HashMap<>();
 
     public boolean isDodging(UUID participant) {
@@ -70,6 +72,17 @@ public final class EncounterFlags {
 
     public void setHidden(UUID participant) {
         hidden.add(participant);
+        stealthByHider.remove(participant);
+    }
+
+    public void setHidden(UUID participant, int stealthTotal) {
+        hidden.add(participant);
+        stealthByHider.put(participant, stealthTotal);
+    }
+
+    /** Every hider that hid with a Stealth roll, against its total. */
+    public Map<UUID, Integer> hiddenStealth() {
+        return Map.copyOf(stealthByHider);
     }
 
     /** Whether anyone in this encounter is hiding, which is what {@code Concealment} reconciles on. */
@@ -79,12 +92,14 @@ public final class EncounterFlags {
 
     /** Attacking consumes the hidden state: returns whether it was hidden (the advantage grant), then breaks it. */
     public boolean consumeHidden(UUID participant) {
+        stealthByHider.remove(participant);
         return hidden.remove(participant);
     }
 
     /** Breaks the hidden state without granting anything (used when a hit reveals the hider). */
     public void breakHidden(UUID participant) {
         hidden.remove(participant);
+        stealthByHider.remove(participant);
     }
 
     public boolean isGrappled(UUID participant) {
@@ -128,6 +143,7 @@ public final class EncounterFlags {
         helpAdvantageByAlly.values().removeIf(helper -> helper.equals(participant));
         reactionUsed.remove(participant);
         hidden.remove(participant);
+        stealthByHider.remove(participant);
         grappledBy.remove(participant);
         grappledBy.values().removeIf(grappler -> grappler.equals(participant));
     }
