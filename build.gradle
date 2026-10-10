@@ -28,10 +28,17 @@ subprojects {
             url = 'https://api.modrinth.com/maven'
             content { includeGroup 'maven.modrinth' }
         }
-        // TODO: switch Checks to the Modrinth maven once it is published there.
+        // Stand-in for Checks while its Modrinth ids are unset; see checksArtifact below.
         mavenLocal {
             content { includeGroup 'studio.modroll.checks' }
         }
+    }
+
+    // A loader's Checks jar: pinned by Modrinth version id like Critfall, or the local Maven publish
+    // while that id is still empty in gradle.properties.
+    ext.checksArtifact = { String loader ->
+        def modrinthId = project.property("checks_${loader}_modrinth_id")
+        modrinthId ? "maven.modrinth:critfall-checks:${modrinthId}" : "studio.modroll.checks:checks-${loader}:${checks_version}"
     }
 
     dependencies {

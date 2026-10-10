@@ -39,6 +39,26 @@ public class ChecksGameTests {
         ChecksScenarios.hideStoresTheStealthTotal(helper);
     }
 
+    @GameTest(template = TEMPLATE, batch = "checksHideMode")
+    public void hideShowsTheModeRolled(GameTestHelper helper) {
+        ChecksScenarios.hideShowsTheModeRolled(helper);
+    }
+
+    @GameTest(template = TEMPLATE, batch = "checksHideCanceled")
+    public void aCanceledHideFailsWithoutDice(GameTestHelper helper) {
+        ChecksScenarios.aCanceledHideFailsWithoutDice(helper);
+    }
+
+    @GameTest(template = TEMPLATE, batch = "checksShoveCanceled")
+    public void aCanceledShoveFailsWithoutDice(GameTestHelper helper) {
+        ChecksScenarios.aCanceledShoveFailsWithoutDice(helper);
+    }
+
+    @GameTest(template = TEMPLATE, batch = "checksInitiative")
+    public void initiativeAddsDexterity(GameTestHelper helper) {
+        ChecksScenarios.initiativeAddsDexterity(helper);
+    }
+
     @GameTest(template = TEMPLATE, batch = "checksKeenWatcher")
     public void aKeenEnemyRevealsTheHiderOnItsTurn(GameTestHelper helper) {
         ChecksScenarios.aKeenEnemyRevealsTheHiderOnItsTurn(helper);

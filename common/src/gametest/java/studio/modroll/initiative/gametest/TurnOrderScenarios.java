@@ -187,6 +187,7 @@ public final class TurnOrderScenarios {
         InitiativeConfig.overrideTurnsForTesting(turns);
         InitiativeConfig.overrideActionsForTesting(ScenarioSupport.ACTIONS_OFF);
         InitiativeConfig.overrideGrappleForTesting(ScenarioSupport.GRAPPLE_DEFAULT);
+        InitiativeConfig.overrideChecksForTesting(ScenarioSupport.CHECKS_OFF);
         ScenarioSupport.discardLeftoverHostilesNearby(helper);
     }
 

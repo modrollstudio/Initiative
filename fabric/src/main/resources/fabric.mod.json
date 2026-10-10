@@ -21,12 +21,12 @@
   },
   "depends": {
     "fabricloader": ">=${fabric_loader_version}",
-    "minecraft": ">=${minecraft_version} <1.22",
+    "minecraft": "${minecraft_version}",
     "java": ">=21",
     "fabric-api": "*",
-    "critfall": ">=${critfall_version}"
+    "critfall": ">=${critfall_min_version}"
   },
   "suggests": {
-    "checks": ">=${checks_version}"
+    "checks": ">=${checks_min_version}"
   }
 }

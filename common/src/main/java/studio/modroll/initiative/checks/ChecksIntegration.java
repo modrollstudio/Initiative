@@ -24,8 +24,13 @@ public final class ChecksIntegration {
         return present;
     }
 
-    /** Checks is installed, turned on in the config, and has the skills these rolls use loaded. */
+    /** Checks is installed and turned on in the config: enough for initiative, which rolls no skill. */
+    public static boolean enabled() {
+        return present && InitiativeConfig.checks().enabled();
+    }
+
+    /** {@link #enabled} and has the skills these rolls use loaded. */
     public static boolean active() {
-        return present && InitiativeConfig.checks().enabled() && ChecksBridge.skillsLoaded();
+        return enabled() && ChecksBridge.skillsLoaded();
     }
 }

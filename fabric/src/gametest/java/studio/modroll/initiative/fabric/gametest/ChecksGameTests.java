@@ -33,6 +33,26 @@ public class ChecksGameTests implements FabricGameTest {
         ChecksScenarios.hideStoresTheStealthTotal(helper);
     }
 
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE, batch = "checksHideMode")
+    public void hideShowsTheModeRolled(GameTestHelper helper) {
+        ChecksScenarios.hideShowsTheModeRolled(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE, batch = "checksHideCanceled")
+    public void aCanceledHideFailsWithoutDice(GameTestHelper helper) {
+        ChecksScenarios.aCanceledHideFailsWithoutDice(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE, batch = "checksShoveCanceled")
+    public void aCanceledShoveFailsWithoutDice(GameTestHelper helper) {
+        ChecksScenarios.aCanceledShoveFailsWithoutDice(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE, batch = "checksInitiative")
+    public void initiativeAddsDexterity(GameTestHelper helper) {
+        ChecksScenarios.initiativeAddsDexterity(helper);
+    }
+
     @GameTest(template = FabricGameTest.EMPTY_STRUCTURE, batch = "checksKeenWatcher")
     public void aKeenEnemyRevealsTheHiderOnItsTurn(GameTestHelper helper) {
         ChecksScenarios.aKeenEnemyRevealsTheHiderOnItsTurn(helper);
