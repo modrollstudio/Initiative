@@ -148,7 +148,7 @@ See [turns](turns.md) for the mechanics.
 | `enabled` | boolean | Feature toggle for initiative and turn order. Off = plain M1 encounter bubbles. |
 | `turn_timeout_ticks` | integer > 0 | Server ticks after which a **player's** turn ends on its own (default 600 = 30 seconds). It is a stall-breaker, not the way a turn is meant to end: a decisive player clicks End Turn long before it, so the generosity only costs the table when somebody has walked away. |
 | `mob_turn_timeout_ticks` | integer > 0 | The same for a **mob's** turn (default 120 = 6 seconds). A mob acts instantly through its AI and ends its turn on the spot, so this is only the wait for one that cannot act at all. |
-| `initiative_bonus_per_speed` | number ≥ 0 | Initiative bonus per point of movement-speed attribute. |
+| `initiative_bonus_per_speed` | number ≥ 0 | Initiative bonus per point of movement-speed attribute. Unused while [Checks](#checks) supplies Dexterity. |
 | `initiative_max_bonus` | integer ≥ 0 | Upper clamp for the derived initiative bonus. |
 | `freeze_enabled` | boolean | Feature toggle for the AI freeze. Off = turn order still runs but mobs act in real time (M2a behavior). Turning it off mid-game thaws everything within a tick. |
 | `acting_marker_enabled` | boolean | Debug-grade particle marker above the entity whose turn it is, for playtest verification. Not the turn HUD. |
@@ -268,7 +268,7 @@ The optional [Critfall: Checks](actions.md#with-checks-installed) integration.
 
 | Field | Type | Meaning |
 |---|---|---|
-| `enabled` | boolean | On (default): with Checks installed, Shove, Grapple, Escape and Hide roll the participants' own skills through Checks instead of the flat config bonuses. Off, or without Checks installed: the flat bonuses, exactly as before. |
+| `enabled` | boolean | On (default): with Checks installed, Shove, Grapple, Escape and Hide roll the participants' own skills through Checks instead of the flat config bonuses, and initiative adds Dexterity instead of the movement-speed bonus. Off, or without Checks installed: the flat bonuses and movement-speed initiative, exactly as before. |
 
 The checks each value must pass: `trigger_radius` must be positive and `leave_radius` at least
 `trigger_radius`; both turn timeouts must be positive and the two initiative values must not be

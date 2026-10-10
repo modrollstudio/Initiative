@@ -278,8 +278,9 @@ onto a corpse or an entity that walked away:
 
 [Critfall: Checks](https://modroll.studio) adds ability scores and skills. Initiative works without
 it; when it is installed and [`checks.enabled`](config.md#checks) is on (the default), four actions
-roll the participants' own skills through Checks instead of the flat config bonuses. Checks rolls
-every die through Critfall, so these rolls animate like any other.
+roll the participants' own skills through Checks instead of the flat config bonuses, and
+[initiative](turns.md) adds each participant's Dexterity modifier instead of the movement-speed bonus.
+Checks rolls every die through Critfall, so these rolls animate like any other.
 
 | Action | Initiator rolls | Opponent rolls |
 |---|---|---|
@@ -291,10 +292,14 @@ The contest rules are unchanged: the initiator wins only with a strictly higher 
 **Hide** is no longer a contest. You roll Stealth and are hidden, and your total is kept while you
 stay hidden. On each enemy's turn, that enemy's **passive Perception** (`10 +` its Perception
 modifier) is checked against it: if it meets or beats your total, you are revealed. Nobody rolls for
-this. Attacking, being hit and leaving the encounter still reveal you as before.
+this. Attacking, being hit and leaving the encounter still reveal you as before. The Stealth roll
+shows the mode Checks rolled it with: both dice under advantage or disadvantage.
 
-Turn `checks.enabled` off, or play without Checks, and all four go back to the flat bonuses exactly.
-Reel always uses its flat bonuses.
+Checks lets other mods cancel a roll. A canceled roll rolled nothing, so the action fails, its cost
+is still spent, and no dice are shown.
+
+Turn `checks.enabled` off, or play without Checks, and all four go back to the flat bonuses exactly,
+and initiative to the movement-speed bonus. Reel always uses its flat bonuses.
 
 ## Cover
 

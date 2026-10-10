@@ -16,7 +16,9 @@ bonus      = floor(movementSpeed × initiative_bonus_per_speed), clamped to [0, 
 
 `movementSpeed` is the entity's movement-speed attribute, mirroring Critfall's derivation
 philosophy (plausible tabletop stats from vanilla attributes). At the default scale of 20 a
-player (speed 0.1) gets +2 and a zombie (speed 0.23) gets +4. The result is stored on the
+player (speed 0.1) gets +2 and a zombie (speed 0.23) gets +4. With
+[Checks installed](actions.md#with-checks-installed) and `checks.enabled` on, the bonus is the
+participant's Dexterity modifier instead, which can be negative. The result is stored on the
 encounter as an initiative entry (participant, total, bonus).
 
 ## Turn order and tie-breaking

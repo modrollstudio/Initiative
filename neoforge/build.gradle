@@ -7,6 +7,9 @@ sourceSets {
     gametest
 }
 
+// -PwithoutChecks leaves Checks off the dev runs, so the GameTests run as a pack without it would.
+def withoutChecks = project.hasProperty('withoutChecks')
+
 neoForge {
     version = neoforge_version
 
@@ -33,6 +36,9 @@ neoForge {
         gameTestServer {
             type = 'gameTestServer'
             systemProperty 'neoforge.enabledGameTestNamespaces', mod_id
+            if (withoutChecks) {
+                systemProperty 'initiative.gametest.withoutChecks', 'true'
+            }
             gameDirectory = file('run-gametest')
         }
     }
@@ -57,10 +63,12 @@ dependencies {
 
     // Critfall consumed as a published Modrinth artifact; implementation puts it on the dev-run
     // runtime classpath so FML loads it as a mod in runClient/gameTestServer.
-    implementation "maven.modrinth:critfall:${critfall_version}"
+    implementation "maven.modrinth:critfall:${critfall_neoforge_modrinth_id}"
 
     // Checks on the dev runs only, so the GameTests exercise the Checks path; never a compile dependency.
-    runtimeOnly "studio.modroll.checks:checks-neoforge:${checks_version}"
+    if (!withoutChecks) {
+        runtimeOnly checksArtifact('neoforge')
+    }
 }
 
 // Nothing in the build graph compiles the gametest source set otherwise; keep CI's `check` catching it.

@@ -50,8 +50,8 @@ final class ScenarioSupport {
     static final GrappleConfig GRAPPLE_DEFAULT = new GrappleConfig(true, 3.0, 0, 0, 5.0, true, 0, 0);
 
     /**
-     * The GameTest runs have Checks installed, so every suite whose contests or Hide assert flat-bonus
-     * outcomes pins the integration off; the Checks suite pins it on.
+     * The GameTest runs have Checks installed, so every suite whose initiative, contests or Hide assert
+     * flat-bonus outcomes pins the integration off; the Checks suite pins it on.
      */
     static final ChecksConfig CHECKS_OFF = new ChecksConfig(false);
 

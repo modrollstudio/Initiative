@@ -1,6 +1,7 @@
 package studio.modroll.initiative.checks;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -30,5 +31,22 @@ class ChecksIntegrationTest {
         InitiativeConfig.overrideChecksForTesting(new ChecksConfig(false));
         ChecksIntegration.setPresent(true);
         assertFalse(ChecksIntegration.active());
+    }
+
+    @Test
+    void installedAndOnItIsEnabledWithoutTouchingChecks() {
+        InitiativeConfig.overrideChecksForTesting(new ChecksConfig(true));
+        ChecksIntegration.setPresent(true);
+        assertTrue(ChecksIntegration.enabled());
+    }
+
+    @Test
+    void withoutChecksInstalledOrSwitchedOffItIsNotEnabled() {
+        InitiativeConfig.overrideChecksForTesting(new ChecksConfig(true));
+        ChecksIntegration.setPresent(false);
+        assertFalse(ChecksIntegration.enabled());
+        InitiativeConfig.overrideChecksForTesting(new ChecksConfig(false));
+        ChecksIntegration.setPresent(true);
+        assertFalse(ChecksIntegration.enabled());
     }
 }

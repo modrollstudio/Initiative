@@ -1,18 +1,29 @@
 # Changelog
 
-## [Unreleased]
+## [0.2.0] - Unreleased
 
 - **Shove, Grapple, Escape and Hide roll real skills with Critfall: Checks.** Their contests used
-  flat config bonuses, the same for every participant. With Checks installed they now roll each
-  side's own skills through it. Shove and Grapple are your Athletics against the target's Athletics
-  or Acrobatics, whichever is higher. Escape is your Athletics or Acrobatics, whichever is higher,
-  against the grappler's Athletics. Hide is no longer a contest: you roll Stealth, you are hidden,
-  and the total is kept. On each enemy's turn its passive Perception is checked against that total,
-  and if it meets or beats it you are revealed. Attacking, being hit and leaving still reveal you as
-  before. The Stealth roll gets its own single-die check animation, and the contests animate as
-  before. Checks stays optional: without it, nothing changes and none of its classes load. New
-  `checks.enabled` (default on); off restores the flat bonuses even with Checks installed. Reel
-  keeps its flat bonuses.
+  flat config bonuses, the same for every participant. With Checks 0.1.0 or newer installed they now
+  roll each side's own skills through it. Shove and Grapple are your Athletics against the target's
+  Athletics or Acrobatics, whichever is higher. Escape is your Athletics or Acrobatics, whichever is
+  higher, against the grappler's Athletics. Hide is no longer a contest: you roll Stealth, you are
+  hidden, and the total is kept. On each enemy's turn its passive Perception is checked against that
+  total, and if it meets or beats it you are revealed. Attacking, being hit and leaving still reveal
+  you as before. The Stealth roll gets its own check animation, showing both dice when Checks rolls
+  it with advantage or disadvantage, and the contests animate as before. If another mod cancels one
+  of these rolls, the action fails without showing any dice. Checks stays optional: without it,
+  nothing changes and none of its classes load. New `checks.enabled` (default on); off restores the
+  flat bonuses even with Checks installed. Reel keeps its flat bonuses.
+
+- **Initiative adds your Dexterity with Critfall: Checks.** Everyone's initiative bonus came from
+  their movement speed. With Checks installed it is now each participant's Dexterity modifier, so a
+  clumsy creature can roll below its d20. Without Checks, or with `checks.enabled` off, initiative
+  still uses movement speed.
+
+- **Minecraft 1.21.1 only.** Both loaders now require exactly Minecraft 1.21.1, the only version
+  Initiative is built and tested on; the Fabric jar used to accept any later 1.21 release.
+
+- **Requires Critfall 0.2.10 or newer**, up from 0.2.6: the same minimum Critfall: Checks requires.
 
 ## [0.1.1] - 2026-09-27
 

@@ -46,6 +46,6 @@ documented rather than changed:
   hostile server→client packet throws `ArrayIndexOutOfBoundsException` in the decoder.
 - **C10** — `NativeActions.useDurability` increments damage past the item's maximum, so a fishing
   rod used to Reel never breaks and can show an overfull durability bar.
-- **F1** — the Critfall dependency range is open-ended on both loaders (`[0.2.6,)` / `>=0.2.6`), so a
+- **F1** — the Critfall dependency range is open-ended on both loaders (`[0.2.10,)` / `>=0.2.10`), so a
   breaking Critfall release would load and fail at the first API call instead of being refused by the
   loader. Bounding it is a Modroll release-policy decision across two mods.

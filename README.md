@@ -10,13 +10,14 @@ save, crit, and fumble is resolved by Critfall through its public API; Initiativ
 
 **Requires Critfall.** Fully optional the other way around: Critfall works standalone.
 
-**Works with Critfall: Checks** (optional). With it installed, Shove, Grapple, Escape and Hide roll
-the participants' skills instead of flat bonuses; see [actions](docs/actions.md#with-checks-installed).
+**Works with Critfall: Checks** (optional). With it installed, initiative adds Dexterity, and Shove,
+Grapple, Escape and Hide roll the participants' skills instead of flat bonuses; see
+[actions](docs/actions.md#with-checks-installed).
 
 ## Install
 
 - Minecraft 1.21.1 with NeoForge 21.1+, or Fabric Loader 0.16.9+ with Fabric API
-- [Critfall](https://github.com/modrollstudio/Critfall) 0.2.6 or newer
+- [Critfall](https://github.com/modrollstudio/Critfall) 0.2.10 or newer
 - The Initiative jar for your loader (`+neoforge` or `+fabric`), on the server and every client
 
 ## Scope
@@ -40,16 +41,18 @@ covers each key, and the other pages in [docs](docs) cover each system.
 ## Building
 
 Critfall is consumed from the [Modrinth maven](https://api.modrinth.com/maven) under the
-`maven.modrinth:critfall` coordinates pinned in `gradle.properties`. Checks is not on Modrinth yet,
-so its jars (`studio.modroll.checks:checks-*`, `checks_version` in `gradle.properties`) come from
-your local Maven repo: publish them from the Checks repo before building.
+`maven.modrinth:critfall` coordinates pinned in `gradle.properties`. Checks is pinned the same way
+(`checks_*_modrinth_id`), but while those ids are empty its jars
+(`studio.modroll.checks:checks-<loader>:<checks_version>`) come from your local Maven repo: publish them
+from the Checks repo before building.
 
 ```
 ./gradlew check    # unit tests + spotless
 ./gradlew build    # initiative-neoforge-*.jar and initiative-fabric-*.jar
 ```
 
-GameTests: `./gradlew :neoforge:runGameTestServer` and `./gradlew :fabric:runGametest`.
+GameTests: `./gradlew :neoforge:runGameTestServer` and `./gradlew :fabric:runGametest`. They run with
+Checks installed; add `-PwithoutChecks` to run them as a pack without it would.
 
 ## License
 

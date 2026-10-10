@@ -16,9 +16,7 @@ import studio.modroll.critfall.api.ContestContext;
 import studio.modroll.critfall.api.RollService;
 import studio.modroll.critfall.api.combat.AttackResult;
 import studio.modroll.critfall.api.combat.ContestResult;
-import studio.modroll.critfall.api.dice.RollDetail;
 import studio.modroll.critfall.api.dice.RollMode;
-import studio.modroll.critfall.api.dice.RollResult;
 import studio.modroll.initiative.api.ActionContext;
 import studio.modroll.initiative.api.ActionRegistry;
 import studio.modroll.initiative.api.ActionRequest;
@@ -223,8 +221,8 @@ public final class ActionEconomy {
 
     /**
      * Hide: a Stealth-vs-Perception contest against the nearest hostile observer. With Checks active
-     * the hider instead rolls Stealth and always hides; the total is kept for {@link PassivePerception}
-     * to check each enemy against on its turn.
+     * the hider instead rolls Stealth and hides; the total is kept for {@link PassivePerception} to
+     * check each enemy against on its turn.
      */
     static ActionResult performHide(ActionContext context) {
         if (ChecksIntegration.active()) {
@@ -239,14 +237,20 @@ public final class ActionEconomy {
         return ActionResult.performed(hidden);
     }
 
-    /** Unopposed, so the roll is shown straight through the sync: no opponent for {@code showRoll}. */
+    /**
+     * Unopposed, so the roll is shown straight through the sync: no opponent for {@code showRoll}. A
+     * Stealth check a check event listener canceled rolled nothing: the Hide fails, and no dice are shown.
+     */
     private static ActionResult hideWithStealthCheck(ActionContext context) {
         LivingEntity actor = context.actor();
-        RollResult stealth = ChecksBridge.stealthCheck(actor);
-        RollDetail roll = RollDetail.of(RollMode.NORMAL, stealth);
+        Optional<ChecksBridge.Rolled> stealth = ChecksBridge.stealthCheck(actor);
+        if (stealth.isEmpty()) {
+            return ActionResult.performed(false);
+        }
         RollAnimationSync.play(
-                actor, RollAnimation.check(roll, actor.getDisplayName().getString()));
-        flagsOf(context).setHidden(actor.getUUID(), stealth.total());
+                actor,
+                RollAnimation.check(stealth.get().roll(), actor.getDisplayName().getString()));
+        flagsOf(context).setHidden(actor.getUUID(), stealth.get().total());
         return ActionResult.performed(true);
     }
 

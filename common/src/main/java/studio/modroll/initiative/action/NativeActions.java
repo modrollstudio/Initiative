@@ -1,5 +1,6 @@
 package studio.modroll.initiative.action;
 
+import java.util.Optional;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
@@ -221,6 +222,11 @@ public final class NativeActions {
     private static boolean shownWon(ActionContext context, LivingEntity opponent, ContestResult result) {
         context.showRoll(result, opponent);
         return result.initiatorWins();
+    }
+
+    /** A Checks contest a check event listener canceled rolled nothing: it is lost, and no dice are shown. */
+    private static boolean shownWon(ActionContext context, LivingEntity opponent, Optional<ContestResult> result) {
+        return result.map(rolled -> shownWon(context, opponent, rolled)).orElse(false);
     }
 
     /** Vanilla knockback pushes the target away from {@code source}. */

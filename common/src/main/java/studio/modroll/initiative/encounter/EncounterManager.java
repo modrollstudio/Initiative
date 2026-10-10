@@ -25,6 +25,8 @@ import studio.modroll.critfall.api.dice.RollMode;
 import studio.modroll.critfall.api.dice.RollResult;
 import studio.modroll.initiative.action.ActionEconomy;
 import studio.modroll.initiative.action.Concealment;
+import studio.modroll.initiative.checks.ChecksBridge;
+import studio.modroll.initiative.checks.ChecksIntegration;
 import studio.modroll.initiative.config.EncounterConfig;
 import studio.modroll.initiative.config.InitiativeConfig;
 import studio.modroll.initiative.config.TurnConfig;
@@ -225,7 +227,7 @@ public final class EncounterManager {
     }
 
     private static InitiativeEntry rollInitiative(LivingEntity entity, TurnConfig turns) {
-        int bonus = InitiativeDerivation.bonus(entity.getAttributeValue(Attributes.MOVEMENT_SPEED), turns);
+        int bonus = initiativeBonus(entity, turns);
         RollResult roll = RollService.roll(D20);
         RollAnimationSync.play(
                 entity,
@@ -233,6 +235,14 @@ public final class EncounterManager {
                         RollDetail.of(RollMode.NORMAL, roll),
                         entity.getDisplayName().getString()));
         return new InitiativeEntry(entity.getUUID(), roll.total() + bonus, bonus);
+    }
+
+    /** With Checks, the entity's Dexterity modifier, which may be negative; without, its movement-speed bonus. */
+    private static int initiativeBonus(LivingEntity entity, TurnConfig turns) {
+        if (ChecksIntegration.enabled()) {
+            return ChecksBridge.dexterityModifier(entity);
+        }
+        return InitiativeDerivation.bonus(entity.getAttributeValue(Attributes.MOVEMENT_SPEED), turns);
     }
 
     /**
