@@ -1,11 +1,26 @@
 package studio.modroll.initiative.gametest;
 
+import com.mojang.datafixers.util.Pair;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.random.RandomGenerator;
+import java.util.stream.Collectors;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.tags.TagKey;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.monster.Husk;
+import net.minecraft.world.entity.monster.Illusioner;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
 import studio.modroll.critfall.api.CombatSuppression;
 import studio.modroll.critfall.api.RollService;
@@ -24,9 +39,23 @@ import studio.modroll.initiative.encounter.EncounterManager;
 public final class EncounterScenarios {
 
     private static final EncounterConfig TEST_CONFIG =
-            new EncounterConfig(true, true, true, false, true, true, 3.0, 5.0);
+            new EncounterConfig(true, true, true, false, true, true, true, 3.0, 5.0);
+    private static final EncounterConfig SIGHT_NOT_REQUIRED =
+            new EncounterConfig(true, true, true, false, true, true, false, 3.0, 5.0);
     private static final TurnConfig TURNS_DISABLED =
             new TurnConfig(false, 100, 100, 20.0, 12, false, false, false, Set.of());
+
+    /**
+     * The sight scenarios: the player at (1, 1) hits a husk at (2, 2), and a stone wall along z = 3,
+     * at eye height, cuts off the back row z = 4 — still inside the trigger radius of the fight.
+     */
+    private static final int WALL_Z = 3;
+
+    private static final int WALL_MIN_X = 0;
+    private static final int WALL_MAX_X = 4;
+    private static final int WALL_MIN_Y = 2;
+    private static final int WALL_MAX_Y = 3;
+    private static final int BACK_ROW_Z = 4;
 
     private EncounterScenarios() {}
 
@@ -145,7 +174,7 @@ public final class EncounterScenarios {
     }
 
     public static void disabledFlagFormsNoEncounter(GameTestHelper helper) {
-        prepare(helper, new EncounterConfig(false, true, true, false, true, true, 3.0, 5.0));
+        prepare(helper, new EncounterConfig(false, true, true, false, true, true, true, 3.0, 5.0));
         Player player = spawnPlayer(helper, 1, 1);
         Husk husk = spawnHusk(helper, 2, 2);
         husk.hurt(helper.getLevel().damageSources().playerAttack(player), 1.0f);
@@ -159,6 +188,198 @@ public final class EncounterScenarios {
         player.discard();
         husk.discard();
         helper.succeed();
+    }
+
+    public static void wallKeepsAHostileOutOfTheFight(GameTestHelper helper) {
+        prepare(helper, TEST_CONFIG);
+        buildWall(helper);
+        Player player = spawnPlayer(helper, 1, 1);
+        Husk target = spawnHusk(helper, 2, 2);
+        Husk inView = spawnHusk(helper, 0, 2);
+        Husk behindWall = spawnHusk(helper, 2, BACK_ROW_Z);
+        target.hurt(helper.getLevel().damageSources().playerAttack(player), 1.0f);
+        if (!RollService.isSuppressed(inView)) {
+            helper.fail("a hostile in plain view of the fight must be pulled in");
+        }
+        helper.startSequence()
+                .thenExecuteAfter(2, () -> {
+                    if (isInAnEncounter(helper, behindWall)) {
+                        helper.fail("a hostile behind a solid wall must not join the fight");
+                    }
+                    discardAll(player, target, inView, behindWall);
+                    clearWall(helper);
+                })
+                .thenSucceed();
+    }
+
+    public static void attackerBehindAWallJoins(GameTestHelper helper) {
+        prepare(helper, TEST_CONFIG);
+        buildWall(helper);
+        Player player = spawnPlayer(helper, 1, 1);
+        Husk target = spawnHusk(helper, 2, 2);
+        Husk behindWall = spawnHusk(helper, 2, BACK_ROW_Z);
+        target.hurt(helper.getLevel().damageSources().playerAttack(player), 1.0f);
+        player.hurt(helper.getLevel().damageSources().mobAttack(behindWall), 1.0f);
+        if (!isInAnEncounter(helper, behindWall)) {
+            helper.fail("a mob that attacks a participant must join even without line of sight");
+        }
+        discardAll(player, target, behindWall);
+        clearWall(helper);
+        helper.succeed();
+    }
+
+    /**
+     * Both back-row husks start behind the wall, a divider between them so neither can see the other.
+     * Opening the wall in front of one lets it see the player; the other must stay out even once its
+     * neighbour has joined.
+     */
+    public static void gainingSightMidFightJoins(GameTestHelper helper) {
+        prepare(helper, TEST_CONFIG);
+        buildWall(helper);
+        placeColumn(helper, 2, WALL_Z + 1, Blocks.STONE);
+        Player player = spawnPlayer(helper, 1, 1);
+        Husk target = spawnHusk(helper, 2, 2);
+        Husk revealed = spawnHusk(helper, 0, BACK_ROW_Z);
+        Husk hidden = spawnHusk(helper, 4, BACK_ROW_Z);
+        target.hurt(helper.getLevel().damageSources().playerAttack(player), 1.0f);
+        helper.startSequence()
+                .thenExecuteAfter(2, () -> {
+                    if (isInAnEncounter(helper, revealed) || isInAnEncounter(helper, hidden)) {
+                        helper.fail("no hostile behind the wall may join before it can see the fight");
+                    }
+                    placeColumn(helper, 0, WALL_Z, Blocks.AIR);
+                    placeColumn(helper, 1, WALL_Z, Blocks.AIR);
+                })
+                .thenExecuteAfter(2, () -> {
+                    if (!isInAnEncounter(helper, revealed)) {
+                        helper.fail("a hostile that gains sight of a participant mid-fight must join");
+                    }
+                    if (isInAnEncounter(helper, hidden)) {
+                        helper.fail("a hostile that stays hidden must not join");
+                    }
+                    discardAll(player, target, revealed, hidden);
+                    placeColumn(helper, 2, WALL_Z + 1, Blocks.AIR);
+                    clearWall(helper);
+                })
+                .thenSucceed();
+    }
+
+    /**
+     * pull_nearby_players sweeps players in by the same sight rule as hostiles: a friend on the far
+     * side of the wall stays out, and joins on the tick an opening lets them see the husk.
+     */
+    public static void playerBehindAWallJoinsOnceTheyCanSee(GameTestHelper helper) {
+        prepare(helper, TEST_CONFIG);
+        buildWall(helper);
+        Player striker = spawnPlayer(helper, 1, 1);
+        Husk target = spawnHusk(helper, 2, 2);
+        Player behindWall = spawnPlayer(helper, 2.5, BACK_ROW_Z + 0.5);
+        target.hurt(helper.getLevel().damageSources().playerAttack(striker), 1.0f);
+        helper.startSequence()
+                .thenExecuteAfter(2, () -> {
+                    if (isInAnEncounter(helper, behindWall)) {
+                        helper.fail("a player behind a solid wall must not be pulled into the fight");
+                    }
+                    placeColumn(helper, 2, WALL_Z, Blocks.AIR);
+                })
+                .thenExecuteAfter(2, () -> {
+                    if (!isInAnEncounter(helper, behindWall)) {
+                        helper.fail("a player who gains sight of a participant mid-fight must join");
+                    }
+                    discardAll(striker, target, behindWall);
+                    clearWall(helper);
+                })
+                .thenSucceed();
+    }
+
+    /**
+     * The shipped tag is empty, so the illusioner — a hostile no other scenario spawns — is bound
+     * into it for this test alone. It stands in plain view and attacks a participant, so every join
+     * path is offered to it; the bindings are restored before the verdict so a failure cannot leak.
+     */
+    public static void taggedMobNeverJoins(GameTestHelper helper) {
+        prepare(helper, TEST_CONFIG);
+        Map<TagKey<EntityType<?>>, List<Holder<EntityType<?>>>> original = entityTypeTags();
+        tagNeverJoins(original, EntityType.ILLUSIONER);
+        Player player = spawnPlayer(helper, 1, 1);
+        Husk target = spawnHusk(helper, 2, 2);
+        Illusioner tagged = helper.spawn(EntityType.ILLUSIONER, new BlockPos(0, 1, 2));
+        tagged.setNoAi(true);
+        target.hurt(helper.getLevel().damageSources().playerAttack(player), 1.0f);
+        player.hurt(helper.getLevel().damageSources().mobAttack(tagged), 1.0f);
+        helper.startSequence()
+                .thenExecuteAfter(2, () -> {
+                    boolean joined = isInAnEncounter(helper, tagged);
+                    BuiltInRegistries.ENTITY_TYPE.bindTags(original);
+                    discardAll(player, target, tagged);
+                    if (joined) {
+                        helper.fail("an entity in #initiative:never_joins must never join an encounter");
+                    }
+                })
+                .thenSucceed();
+    }
+
+    public static void sightNotRequiredPullsThroughWalls(GameTestHelper helper) {
+        prepare(helper, SIGHT_NOT_REQUIRED);
+        buildWall(helper);
+        Player player = spawnPlayer(helper, 1, 1);
+        Husk target = spawnHusk(helper, 2, 2);
+        Husk behindWall = spawnHusk(helper, 2, BACK_ROW_Z);
+        target.hurt(helper.getLevel().damageSources().playerAttack(player), 1.0f);
+        if (!isInAnEncounter(helper, behindWall)) {
+            helper.fail("with require_line_of_sight off a hostile behind a wall must join as before");
+        }
+        discardAll(player, target, behindWall);
+        clearWall(helper);
+        helper.succeed();
+    }
+
+    private static boolean isInAnEncounter(GameTestHelper helper, LivingEntity entity) {
+        return EncounterManager.encounterContaining(helper.getLevel(), entity.getUUID())
+                .isPresent();
+    }
+
+    private static void discardAll(LivingEntity... entities) {
+        for (LivingEntity entity : entities) {
+            entity.discard();
+        }
+    }
+
+    private static void buildWall(GameTestHelper helper) {
+        for (int x = WALL_MIN_X; x <= WALL_MAX_X; x++) {
+            placeColumn(helper, x, WALL_Z, Blocks.STONE);
+        }
+    }
+
+    /** Walls reach above the small template, which the framework does not clear between tests. */
+    private static void clearWall(GameTestHelper helper) {
+        for (int x = WALL_MIN_X; x <= WALL_MAX_X; x++) {
+            placeColumn(helper, x, WALL_Z, Blocks.AIR);
+        }
+    }
+
+    private static void placeColumn(GameTestHelper helper, int x, int z, Block block) {
+        for (int y = WALL_MIN_Y; y <= WALL_MAX_Y; y++) {
+            helper.setBlock(new BlockPos(x, y, z), block);
+        }
+    }
+
+    private static Map<TagKey<EntityType<?>>, List<Holder<EntityType<?>>>> entityTypeTags() {
+        return BuiltInRegistries.ENTITY_TYPE
+                .getTags()
+                .collect(Collectors.toMap(
+                        Pair::getFirst, pair -> pair.getSecond().stream().toList()));
+    }
+
+    /** The 1.21.1 reload path itself: every tag rebound, with one type added to never_joins. */
+    private static void tagNeverJoins(
+            Map<TagKey<EntityType<?>>, List<Holder<EntityType<?>>>> original, EntityType<?> type) {
+        Map<TagKey<EntityType<?>>, List<Holder<EntityType<?>>>> tagged = new HashMap<>(original);
+        List<Holder<EntityType<?>>> members =
+                new ArrayList<>(original.getOrDefault(EncounterManager.NEVER_JOINS, List.of()));
+        members.add(BuiltInRegistries.ENTITY_TYPE.wrapAsHolder(type));
+        tagged.put(EncounterManager.NEVER_JOINS, members);
+        BuiltInRegistries.ENTITY_TYPE.bindTags(tagged);
     }
 
     private static void prepare(GameTestHelper helper, EncounterConfig config) {

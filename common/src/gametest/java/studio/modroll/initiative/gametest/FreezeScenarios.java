@@ -29,7 +29,7 @@ import studio.modroll.initiative.turn.TurnOrder;
 public final class FreezeScenarios {
 
     private static final EncounterConfig TIGHT_BUBBLE =
-            new EncounterConfig(true, true, true, false, true, true, 1.0, 8.0);
+            new EncounterConfig(true, true, true, false, true, true, true, 1.0, 8.0);
     private static final TurnConfig FREEZE_ON =
             new TurnConfig(true, 1000, 1000, 20.0, 12, true, false, false, Set.of());
 

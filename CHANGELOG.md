@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+- **Encounters no longer pull mobs or players through walls.** Anyone inside `trigger_radius`
+  joined the fight, solid blocks or not, so a dungeon fight dragged in the mobs from the
+  neighbouring rooms, and `pull_nearby_players` pulled in a friend on the far side of a wall. A
+  hostile mob or a nearby player is now pulled in only while it has line of sight to a participant,
+  by vanilla's own mob line-of-sight check, both when the fight starts and when it would join
+  mid-fight; one that comes round the corner joins on that tick. A mob that attacks a participant,
+  melee or ranged, still joins regardless, as does a neutral that turns hostile toward one, and a
+  player still joins by attacking or being attacked. New `#initiative:never_joins` entity type tag,
+  shipped empty: types in it never join an encounter. New `encounters.require_line_of_sight`
+  (default on); off restores the radius-only pull.
+
 ## [0.1.1] - 2026-09-27
 
 - **Contested roll names no longer run together.** In a contested roll each side's name is centered
