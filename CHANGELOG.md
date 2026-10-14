@@ -23,8 +23,6 @@
 - **Minecraft 1.21.1 only.** Both loaders now require exactly Minecraft 1.21.1, the only version
   Initiative is built and tested on; the Fabric jar used to accept any later 1.21 release.
 
-- **Requires Critfall 0.2.10 or newer**, up from 0.2.6: the same minimum Critfall: Checks requires.
-
 - **Encounters no longer pull mobs or players through walls.** Anyone inside `trigger_radius`
   joined the fight, solid blocks or not, so a dungeon fight dragged in the mobs from the
   neighbouring rooms, and `pull_nearby_players` pulled in a friend on the far side of a wall. A
