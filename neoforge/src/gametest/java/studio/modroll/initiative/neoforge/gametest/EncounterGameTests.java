@@ -38,4 +38,34 @@ public class EncounterGameTests {
     public void whiffedAttackStillFormsEncounter(GameTestHelper helper) {
         EncounterScenarios.whiffedAttackStillFormsEncounter(helper);
     }
+
+    @GameTest(template = TEMPLATE, batch = "sightWall")
+    public void wallKeepsAHostileOutOfTheFight(GameTestHelper helper) {
+        EncounterScenarios.wallKeepsAHostileOutOfTheFight(helper);
+    }
+
+    @GameTest(template = TEMPLATE, batch = "sightAttacker")
+    public void attackerBehindAWallJoins(GameTestHelper helper) {
+        EncounterScenarios.attackerBehindAWallJoins(helper);
+    }
+
+    @GameTest(template = TEMPLATE, batch = "sightGained")
+    public void gainingSightMidFightJoins(GameTestHelper helper) {
+        EncounterScenarios.gainingSightMidFightJoins(helper);
+    }
+
+    @GameTest(template = TEMPLATE, batch = "sightPlayer")
+    public void playerBehindAWallJoinsOnceTheyCanSee(GameTestHelper helper) {
+        EncounterScenarios.playerBehindAWallJoinsOnceTheyCanSee(helper);
+    }
+
+    @GameTest(template = TEMPLATE, batch = "neverJoins")
+    public void taggedMobNeverJoins(GameTestHelper helper) {
+        EncounterScenarios.taggedMobNeverJoins(helper);
+    }
+
+    @GameTest(template = TEMPLATE, batch = "sightToggle")
+    public void sightNotRequiredPullsThroughWalls(GameTestHelper helper) {
+        EncounterScenarios.sightNotRequiredPullsThroughWalls(helper);
+    }
 }

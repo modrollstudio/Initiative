@@ -8,8 +8,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -23,6 +27,7 @@ import studio.modroll.critfall.api.dice.DiceExpression;
 import studio.modroll.critfall.api.dice.RollDetail;
 import studio.modroll.critfall.api.dice.RollMode;
 import studio.modroll.critfall.api.dice.RollResult;
+import studio.modroll.initiative.Initiative;
 import studio.modroll.initiative.action.ActionEconomy;
 import studio.modroll.initiative.action.Concealment;
 import studio.modroll.initiative.config.EncounterConfig;
@@ -44,6 +49,9 @@ import studio.modroll.initiative.ui.ActionUiSync;
  * entity to still exist.
  */
 public final class EncounterManager {
+
+    public static final TagKey<EntityType<?>> NEVER_JOINS = TagKey.create(
+            Registries.ENTITY_TYPE, ResourceLocation.fromNamespaceAndPath(Initiative.MOD_ID, "never_joins"));
 
     private static final Map<ServerLevel, List<Encounter>> ACTIVE = new HashMap<>();
     private static final DiceExpression D20 = DiceExpression.parse("1d20");
@@ -122,10 +130,17 @@ public final class EncounterManager {
      * moment ago — which is what keeps a hit cow out of initiative.
      */
     private static boolean triggers(LivingEntity hostile, Player player, EncounterConfig config) {
+        if (neverJoins(hostile)) {
+            return false;
+        }
         return hostile instanceof Enemy
                 || config.triggerOnProvokedNeutral()
                         && hostile instanceof Mob mob
                         && Provocation.isProvokedBy(mob, player);
+    }
+
+    private static boolean neverJoins(LivingEntity entity) {
+        return entity.getType().is(NEVER_JOINS);
     }
 
     /**
@@ -244,6 +259,7 @@ public final class EncounterManager {
         for (UUID provoked : Provocation.drainPending(level)) {
             if (!(level.getEntity(provoked) instanceof Mob mob)
                     || !mob.isAlive()
+                    || neverJoins(mob)
                     || encounterContaining(level, provoked).isPresent()) {
                 continue;
             }
@@ -302,18 +318,42 @@ public final class EncounterManager {
      * The whole party rolls initiative: a player inside the bubble is pulled in with the fight, and
      * one who walks in later joins mid-fight — unless they are only watching (spectator) or outside
      * the rules (creative), or {@code pull_nearby_players} is off and attacking is the only way in.
-     * Always-hostile mobs are pulled in on sight; a neutral one only once it is hostile toward a
+     * Always-hostile mobs are pulled in the same way; a neutral one only once it is hostile toward a
      * player already fighting here — so an angry wolf that walks into the bubble joins and the sheep
-     * next to it does not.
+     * next to it does not. Players and always-hostile mobs must also see the fight; the wolf needs
+     * no sight, since its anger already ties it to the fight.
      */
     private static boolean belongsInFight(ServerLevel level, Encounter encounter, LivingEntity entity) {
-        if (entity instanceof Player player) {
-            return InitiativeConfig.encounters().pullNearbyPlayers() && !player.isSpectator() && !player.isCreative();
+        if (neverJoins(entity)) {
+            return false;
         }
-        return entity instanceof Enemy
+        if (entity instanceof Player player) {
+            return InitiativeConfig.encounters().pullNearbyPlayers()
+                    && !player.isSpectator()
+                    && !player.isCreative()
+                    && seesTheFight(level, encounter, player);
+        }
+        return entity instanceof Enemy && seesTheFight(level, encounter, entity)
                 || InitiativeConfig.encounters().triggerOnProvokedNeutral()
                         && entity instanceof Mob mob
                         && isProvokedByAPlayerHere(level, encounter, mob);
+    }
+
+    /**
+     * Vanilla's own eye-to-eye raycast, called directly rather than through {@code Sensing}: that
+     * cache only refreshes on an AI step, which a frozen or no-AI mob never takes.
+     */
+    private static boolean seesTheFight(ServerLevel level, Encounter encounter, LivingEntity entity) {
+        if (!InitiativeConfig.encounters().requireLineOfSight()) {
+            return true;
+        }
+        for (UUID participant : encounter.participants()) {
+            Entity seen = level.getEntity(participant);
+            if (seen != null && entity.hasLineOfSight(seen)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static boolean isProvokedByAPlayerHere(ServerLevel level, Encounter encounter, Mob mob) {

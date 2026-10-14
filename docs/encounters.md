@@ -13,16 +13,18 @@ Server-side only; clients receive nothing yet. All values come from [config](con
   Initiative itself drives through the API cannot re-trigger detection.
 - **Provoked neutrals** — a mob that is not an `Enemy` starts an encounter the moment it turns
   hostile toward a player. See [the rule](#when-a-neutral-mob-counts-as-hostile) below.
-- **Initial pull** — every living `Enemy` within `trigger_radius` of the center joins, and so does
-  every player there: the whole party rolls initiative, not just whoever struck first.
+- **Initial pull** — every living `Enemy` within `trigger_radius` of the center that can
+  [see a participant](#who-gets-pulled-in) joins, and so does every player there who can: the whole
+  party rolls initiative, not just whoever struck first.
 - **Late join** — each tick, living `Enemy` entities inside `trigger_radius` that are not in an
-  encounter join, as do neutral mobs inside it that are hostile toward a player participant — an
-  already-angry wolf that walks into the bubble joins, the sheep beside it does not. A player who
-  walks into the bubble joins the same way, rolling initiative into the running order. Spectator
-  and creative players are never pulled in by the radius; attacking or being attacked still brings
-  a player in from anywhere. With `pull_nearby_players` off, that is the only way a player joins.
-  An entity belongs to **exactly one** encounter: one already fighting elsewhere is never pulled
-  into a second, and encounters never merge.
+  encounter and can see a participant join, as do neutral mobs inside it that are hostile toward a
+  player participant — an already-angry wolf that walks into the bubble joins, the sheep beside it
+  does not. A player who walks into the bubble joins the same way once they can see a participant,
+  rolling initiative into the running order. Spectator and creative players are never pulled in by
+  the radius; attacking or being attacked still brings a player in from anywhere. With
+  `pull_nearby_players` off, that is the only way a player joins. An entity belongs to **exactly
+  one** encounter: one already fighting elsewhere is never pulled into a second, and encounters
+  never merge.
 - **Leave** — each tick a participant is dropped when it is dead, gone from the level
   (unloaded, dimension change), or farther than `leave_radius` from the center — except a
   [ranged attacker](#shooting-into-a-fight-from-outside) still shooting into it. A former neutral is
@@ -33,6 +35,44 @@ Server-side only; clients receive nothing yet. All values come from [config](con
   disconnects is dropped at once rather than a tick later; see [multiplayer](multiplayer.md).
 - **End** — an encounter ends when it no longer has both a player participant and a hostile
   participant. Level unload and server stop end all affected encounters immediately.
+
+## Who gets pulled in
+
+Standing inside `trigger_radius` is not enough on its own: a hostile mob, or a player
+[`pull_nearby_players`](config.md#encounters) would bring in, is pulled in only while it has line of
+sight to a participant — any participant, player or mob. The check is vanilla's own, the eye-to-eye
+raycast mobs use to see you (`LivingEntity.hasLineOfSight`): any block with a collision shape stops
+it, glass included, while blocks you walk through — grass, flowers, water — do not, and nothing past
+128 blocks counts. It runs at the initial pull and again every tick for late joins, so a mob or a
+friend in the next room stays out until a door opens or they come round the corner, and joins on
+the tick they do. Initiative calls the raycast directly rather than through a mob's cached
+`Sensing`, which refreshes only on an AI step that frozen and no-AI mobs never take.
+
+Sight gates the radius pull only. A mob that **attacks** a participant, melee or ranged, joins
+whatever stands between them, and so does a neutral mob that
+[turns hostile](#when-a-neutral-mob-counts-as-hostile) toward one — whether it starts the fight or
+walks into the bubble already angry. A player who attacks or is attacked by a participant joins
+from anywhere, as before.
+
+Set `require_line_of_sight` to `false` to go back to the radius-only pull, walls and all.
+
+### Keeping an entity type out of encounters
+
+Entity types in the `#initiative:never_joins` tag never join an encounter by any path — not by
+being pulled in, not by attacking a participant, not by turning hostile. The attack itself still
+lands in real time; the mob simply stays outside the turn order. Initiative ships the tag empty for
+datapacks and other mods to fill (see [examples/never_joins.json](examples/never_joins.json)):
+
+```json
+{
+  "replace": false,
+  "values": ["minecraft:silverfish", "somemod:dungeon_wisp"]
+}
+```
+
+Place it at `data/initiative/tags/entity_type/never_joins.json` in a datapack. A player that
+attacks a tagged mob starts no encounter either, since that mob is the only hostile in the
+exchange.
 
 ## When a neutral mob counts as hostile
 
