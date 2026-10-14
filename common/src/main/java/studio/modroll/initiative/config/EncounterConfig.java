@@ -11,6 +11,7 @@ public record EncounterConfig(
         boolean triggerOnProvokedNeutral,
         boolean holdRangedAttackers,
         boolean pullNearbyPlayers,
+        boolean requireLineOfSight,
         double triggerRadius,
         double leaveRadius) {
 
@@ -30,6 +31,7 @@ public record EncounterConfig(
                 encounters.read("trigger_on_provoked_neutral", BOOLEAN),
                 encounters.read("hold_ranged_attackers", BOOLEAN),
                 encounters.read("pull_nearby_players", BOOLEAN),
+                encounters.read("require_line_of_sight", BOOLEAN),
                 triggerRadius,
                 leaveRadius);
     }

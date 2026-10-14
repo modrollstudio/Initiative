@@ -32,4 +32,34 @@ public class EncounterGameTests implements FabricGameTest {
     public void whiffedAttackStillFormsEncounter(GameTestHelper helper) {
         EncounterScenarios.whiffedAttackStillFormsEncounter(helper);
     }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE, batch = "sightWall")
+    public void wallKeepsAHostileOutOfTheFight(GameTestHelper helper) {
+        EncounterScenarios.wallKeepsAHostileOutOfTheFight(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE, batch = "sightAttacker")
+    public void attackerBehindAWallJoins(GameTestHelper helper) {
+        EncounterScenarios.attackerBehindAWallJoins(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE, batch = "sightGained")
+    public void gainingSightMidFightJoins(GameTestHelper helper) {
+        EncounterScenarios.gainingSightMidFightJoins(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE, batch = "sightPlayer")
+    public void playerBehindAWallJoinsOnceTheyCanSee(GameTestHelper helper) {
+        EncounterScenarios.playerBehindAWallJoinsOnceTheyCanSee(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE, batch = "neverJoins")
+    public void taggedMobNeverJoins(GameTestHelper helper) {
+        EncounterScenarios.taggedMobNeverJoins(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE, batch = "sightToggle")
+    public void sightNotRequiredPullsThroughWalls(GameTestHelper helper) {
+        EncounterScenarios.sightNotRequiredPullsThroughWalls(helper);
+    }
 }

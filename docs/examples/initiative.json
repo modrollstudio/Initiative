@@ -7,6 +7,7 @@
     "trigger_on_provoked_neutral": true,
     "hold_ranged_attackers": true,
     "pull_nearby_players": true,
+    "require_line_of_sight": true,
     "trigger_radius": 12.0,
     "leave_radius": 20.0
   },
