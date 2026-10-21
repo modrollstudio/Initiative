@@ -43,4 +43,19 @@ public class ConcealmentGameTests {
     public void aHiddenPlayerHoldsAProvokedNeutralInTheFight(GameTestHelper helper) {
         ConcealmentScenarios.aHiddenPlayerHoldsAProvokedNeutralInTheFight(helper);
     }
+
+    @GameTest(template = TEMPLATE, batch = "concealMobTurn")
+    public void aHiddenParticipantIsNeverAttackedOnAMobTurn(GameTestHelper helper) {
+        ConcealmentScenarios.aHiddenParticipantIsNeverAttackedOnAMobTurn(helper);
+    }
+
+    @GameTest(template = TEMPLATE, batch = "concealAllHidden")
+    public void everyPlayerHidingEndsTheFightAndTheMobsLoseTrack(GameTestHelper helper) {
+        ConcealmentScenarios.everyPlayerHidingEndsTheFightAndTheMobsLoseTrack(helper);
+    }
+
+    @GameTest(template = TEMPLATE, batch = "concealLostLeave")
+    public void walkingAwayFromTheLostFightEndsTheConcealment(GameTestHelper helper) {
+        ConcealmentScenarios.walkingAwayFromTheLostFightEndsTheConcealment(helper);
+    }
 }

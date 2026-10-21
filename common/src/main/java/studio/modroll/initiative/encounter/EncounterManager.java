@@ -85,12 +85,13 @@ public final class EncounterManager {
         }
         LivingEntity hostile = playerAttacking ? victim : attacker;
         Player player = (Player) (playerAttacking ? attacker : victim);
-        if (!triggers(hostile, player, config) || !hostile.isAlive() || !attacker.isAlive()) {
-            return;
-        }
         Encounter existing = encounterContaining(level, attacker.getUUID())
                 .or(() -> encounterContaining(level, victim.getUUID()))
                 .orElse(null);
+        boolean intoItsFight = existing != null && existing.contains(hostile.getUUID());
+        if (!(intoItsFight || triggers(hostile, player, config)) || !hostile.isAlive() || !attacker.isAlive()) {
+            return;
+        }
         if (existing != null) {
             join(level, existing, attacker);
             join(level, existing, victim);
@@ -129,7 +130,10 @@ public final class EncounterManager {
     /**
      * An always-hostile mob triggers exactly as it always has. A neutral one triggers only once it
      * is already hostile toward this player — the mob that swung at you, or the one you provoked a
-     * moment ago — which is what keeps a hit cow out of initiative.
+     * moment ago — which is what keeps a hit cow out of initiative. None of that is asked of a mob
+     * already in a fight ({@link #onCombat} skips it): a player who trades blows with one joins its
+     * fight, which is the only way in against a provoked iron golem frozen off its turn, since its
+     * AI can never turn on the newcomer.
      */
     private static boolean triggers(LivingEntity hostile, Player player, EncounterConfig config) {
         if (neverJoins(hostile)) {
@@ -166,6 +170,7 @@ public final class EncounterManager {
         } else {
             Provocation.forget(level);
         }
+        Concealment.reconcileLostTrack(level);
         List<Encounter> encounters = ACTIVE.get(level);
         if (encounters == null) {
             return;
@@ -175,7 +180,11 @@ public final class EncounterManager {
         while (iterator.hasNext()) {
             Encounter encounter = iterator.next();
             releaseInvalidMembers(level, encounter, config.leaveRadius());
-            if (encounter.isOver()) {
+            boolean lostTrack = config.endWhenAllHidden() && Concealment.everyPlayerHidden(encounter);
+            if (lostTrack) {
+                Concealment.loseTrack(level, encounter);
+            }
+            if (lostTrack || encounter.isOver()) {
                 TurnOrderSync.encounterEnding(level, encounter);
                 ActionUiSync.encounterEnding(level, encounter);
                 releaseAll(level, encounter);
@@ -200,6 +209,7 @@ public final class EncounterManager {
 
     public static void levelUnloaded(ServerLevel level) {
         Provocation.forget(level);
+        Concealment.forget(level);
         List<Encounter> encounters = ACTIVE.remove(level);
         if (encounters == null) {
             return;
@@ -460,7 +470,7 @@ public final class EncounterManager {
         UUID current = encounter.turnOrder().currentTurn().orElse(null);
         for (UUID participant : encounter.participants()) {
             boolean acting = participant.equals(current);
-            if (!freezeActive || (acting && !ActionEconomy.actingMovementExhausted(encounter))) {
+            if (!freezeActive || (acting && !ActionEconomy.actingMovementExhausted(level, encounter))) {
                 AiFreeze.thaw(participant);
                 continue;
             }

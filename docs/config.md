@@ -38,6 +38,7 @@ Example (see [examples/initiative.json](examples/initiative.json)):
     "hold_ranged_attackers": true,
     "pull_nearby_players": true,
     "require_line_of_sight": true,
+    "end_when_all_hidden": true,
     "trigger_radius": 12.0,
     "leave_radius": 20.0
   },
@@ -54,7 +55,9 @@ Example (see [examples/initiative.json](examples/initiative.json)):
   },
   "actions": {
     "enabled": true,
-    "movement_budget_blocks": 6.0,
+    "movement_budget_blocks": 10.0,
+    "movement_scales_with_speed": true,
+    "teleports_cost_movement": true,
     "single_attack_per_turn": true,
     "attack_reach_blocks": 4.0,
     "end_turn_when_spent": false,
@@ -138,6 +141,7 @@ Example (see [examples/initiative.json](examples/initiative.json)):
 | `hold_ranged_attackers` | boolean | A participant that shot its way into the fight is not measured against `leave_radius` while it still has someone in the fight in its sights. Off restores the plain distance rule, which drops a shooter that stands outside the leave radius a tick after each hit. See [encounters](encounters.md#shooting-into-a-fight-from-outside). |
 | `pull_nearby_players` | boolean | Players within `trigger_radius` join the encounter when it forms, and players who walk in later join mid-encounter, rolling initiative either way. Spectator and creative players are never pulled in. Off: a player joins only by attacking or being attacked. See [encounters](encounters.md#lifecycle). |
 | `require_line_of_sight` | boolean | A hostile or (with `pull_nearby_players`) a player inside `trigger_radius` is pulled in only while it can see a participant, by vanilla's own mob line-of-sight check — so a dungeon fight no longer drags in the next room through the wall. A mob that attacks a participant, a neutral that turns hostile toward one, and a player who attacks or is attacked join regardless. Off restores the radius-only pull. See [encounters](encounters.md#who-gets-pulled-in). |
+| `end_when_all_hidden` | boolean | An encounter in which every player is hidden ends, and its mobs lose track of the hiders: they stay out of mob targeting until they attack something, a mob hurts them, they join another fight or they walk out past `leave_radius` from where the fight stood. Needs `actions.hide` and `actions.hide_suppresses_targeting`. Off: hiding never ends a fight. See [encounters](encounters.md#lifecycle). |
 | `trigger_radius` | number > 0 | Blocks around the trigger point; hostiles (and, with `pull_nearby_players`, players) inside are pulled into the encounter, and those entering later join — subject to `require_line_of_sight`. |
 | `leave_radius` | number ≥ `trigger_radius` | Participants farther than this from the encounter center leave the encounter — unless `hold_ranged_attackers` is holding a shooter in. |
 
@@ -164,7 +168,9 @@ See [actions](actions.md) for the mechanics.
 | Field | Type | Meaning |
 |---|---|---|
 | `enabled` | boolean | Feature toggle for the M3 action economy. Off = M2 behavior: turns are plain real-time windows, no budgets, no attack interception. |
-| `movement_budget_blocks` | number ≥ 0 | Blocks of movement per turn (default 6 ≈ 30 ft). |
+| `movement_budget_blocks` | number ≥ 0 | Blocks of movement per turn at normal walking speed (default 10). |
+| `movement_scales_with_speed` | boolean | Scales each participant's movement budget by its movement speed against its own walking speed, so Swiftness gives more blocks and Slowness fewer. Off: every participant gets `movement_budget_blocks`. See [actions](actions.md#the-per-turn-budget). |
+| `teleports_cost_movement` | boolean | A teleport on your own turn (ender pearl, chorus fruit, a command, another mod's) counts as movement: refused past the movement left, charged by its horizontal distance otherwise. Off: teleports on your turn are not checked when they happen. Off-turn teleports are refused by `turns.restrict_players_off_turn` either way. See [actions](actions.md#teleports). |
 | `single_attack_per_turn` | boolean | Attacking consumes the turn's one action. Off = attacks bypass the action. |
 | `attack_reach_blocks` | number ≥ 0 | How far an attack reaches (horizontal centre-to-centre, default 4 ≈ a melee swing). Beyond it the attack is `OUT_OF_REACH` and the [turn UI](ui.md) offers no such target. |
 | `end_turn_when_spent` | boolean | A player's turn auto-ends once its action is used and its movement is exhausted. Default off since M8: the player ends the turn with the UI's End Turn button. |

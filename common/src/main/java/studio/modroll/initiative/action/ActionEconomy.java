@@ -81,10 +81,15 @@ public final class ActionEconomy {
 
     private ActionEconomy() {}
 
-    /** The acting participant's budget; a grappled participant's turn starts with no movement. */
-    public static TurnBudget budgetOf(Encounter encounter, UUID participant) {
+    /**
+     * The acting participant's budget. Its movement is the participant's own speed-scaled budget,
+     * fixed as the turn starts; a grappled participant's turn starts with none.
+     */
+    public static TurnBudget budgetOf(Encounter encounter, LivingEntity participant) {
         return encounter.budgetFor(
-                encounter.turnOrder().round(), participant, Grapples.movementBudgetFor(encounter, participant));
+                encounter.turnOrder().round(),
+                participant.getUUID(),
+                Grapples.movementBudgetFor(encounter, participant));
     }
 
     public static boolean active() {
@@ -192,9 +197,9 @@ public final class ActionEconomy {
         return ActionResult.attacked(result);
     }
 
-    /** Dash: extra movement equal to the base budget, spending the action. */
+    /** Dash: extra movement equal to the actor's full budget, spending the action. */
     static ActionResult performDash(ActionContext context) {
-        context.grantMovement(InitiativeConfig.actions().movementBudgetBlocks());
+        context.grantMovement(MovementSpeed.fullBudget(context.actor()));
         return ActionResult.performed();
     }
 
@@ -344,7 +349,7 @@ public final class ActionEconomy {
         ActionConfig actions = InitiativeConfig.actions();
         Grapples.reconcile(level, encounter);
         PassivePerception.revealHidersSpottedBy(encounter, actor);
-        TurnBudget budget = budgetOf(encounter, current);
+        TurnBudget budget = budgetOf(encounter, actor);
         trackMovement(level, encounter, actor, budget);
         if (actor instanceof Mob mob) {
             driveMobTurn(level, encounter, mob, budget);
@@ -358,12 +363,16 @@ public final class ActionEconomy {
      * Movement is measured horizontally against the last in-budget position; a tick that would
      * overshoot burns the remaining budget and reverts the actor — a hard stop at the edge.
      * Vertical movement is free. Re-anchor throughout the hurt window so knockback continuing
-     * into the actor's turn neither consumes movement nor gets reverted by an exhausted budget.
+     * into the actor's turn neither consumes movement nor gets reverted by an exhausted budget —
+     * unless the actor teleported: an ender pearl hurts its thrower as it lands, and the distance
+     * it covered is movement all the same. A teleport is no walk away from anyone's reach, so it
+     * provokes no opportunity attack.
      */
     private static void trackMovement(ServerLevel level, Encounter encounter, LivingEntity actor, TurnBudget budget) {
         Vec3 pos = actor.position();
         Vec3 anchor = encounter.movementAnchor();
-        if (anchor == null || actor.hurtTime > 0) {
+        boolean teleported = encounter.consumeTeleport();
+        if (anchor == null || (actor.hurtTime > 0 && !teleported)) {
             encounter.setMovementAnchor(pos);
             return;
         }
@@ -374,10 +383,12 @@ public final class ActionEconomy {
         if (delta <= budget.movementRemaining()) {
             budget.consumeMovement(delta);
             encounter.setMovementAnchor(pos);
-            Reactions.onMovedWithinTurn(level, encounter, actor, anchor, pos);
+            if (!teleported) {
+                Reactions.onMovedWithinTurn(level, encounter, actor, anchor, pos);
+            }
         } else {
             budget.consumeMovement(budget.movementRemaining());
-            actor.teleportTo(anchor.x, anchor.y, anchor.z);
+            Teleports.moveAsInitiative(actor, anchor);
         }
     }
 
@@ -395,12 +406,13 @@ public final class ActionEconomy {
         }
     }
 
+    /** The mob turn's target: the nearest enemy it can see, so never a hidden one. */
     static LivingEntity nearestEnemy(ServerLevel level, Encounter encounter, LivingEntity actor) {
         Encounter.Side side = encounter.side(actor.getUUID());
         LivingEntity nearest = null;
         double best = Double.MAX_VALUE;
         for (UUID participant : encounter.participants()) {
-            if (encounter.side(participant) == side) {
+            if (encounter.side(participant) == side || Concealment.hides(encounter, participant)) {
                 continue;
             }
             if (!(level.getEntity(participant) instanceof LivingEntity candidate) || !candidate.isAlive()) {
@@ -456,15 +468,15 @@ public final class ActionEconomy {
     }
 
     /** Lets the freeze hold the acting mob in place once its movement budget is gone. */
-    public static boolean actingMovementExhausted(Encounter encounter) {
+    public static boolean actingMovementExhausted(ServerLevel level, Encounter encounter) {
         if (!active()) {
             return false;
         }
         UUID current = encounter.turnOrder().currentTurn().orElse(null);
-        if (current == null) {
+        if (current == null || !(level.getEntity(current) instanceof LivingEntity actor)) {
             return false;
         }
-        return budgetOf(encounter, current).movementExhausted();
+        return budgetOf(encounter, actor).movementExhausted();
     }
 
     public static void sendRejection(Player player, AttackStatus status) {

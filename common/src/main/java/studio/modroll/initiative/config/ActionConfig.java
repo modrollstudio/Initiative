@@ -7,6 +7,8 @@ import static studio.modroll.initiative.config.ConfigValue.NON_NEGATIVE_DOUBLE;
 public record ActionConfig(
         boolean enabled,
         double movementBudgetBlocks,
+        boolean movementScalesWithSpeed,
+        boolean teleportsCostMovement,
         boolean singleAttackPerTurn,
         double attackReachBlocks,
         boolean endTurnWhenSpent,
@@ -38,6 +40,8 @@ public record ActionConfig(
         return new ActionConfig(
                 actions.read("enabled", BOOLEAN),
                 actions.read("movement_budget_blocks", NON_NEGATIVE_DOUBLE),
+                actions.read("movement_scales_with_speed", BOOLEAN),
+                actions.read("teleports_cost_movement", BOOLEAN),
                 actions.read("single_attack_per_turn", BOOLEAN),
                 actions.read("attack_reach_blocks", NON_NEGATIVE_DOUBLE),
                 actions.read("end_turn_when_spent", BOOLEAN),

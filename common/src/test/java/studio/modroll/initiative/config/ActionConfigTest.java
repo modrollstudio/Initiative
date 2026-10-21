@@ -16,6 +16,8 @@ class ActionConfigTest {
                 {"actions": {
                     "enabled": true,
                     "movement_budget_blocks": %s,
+                    "movement_scales_with_speed": false,
+                    "teleports_cost_movement": false,
                     "single_attack_per_turn": true,
                     "attack_reach_blocks": 3.0,
                     "end_turn_when_spent": false,
@@ -76,7 +78,7 @@ class ActionConfigTest {
                     "help": true
                 }}""");
         ActionConfig config = ActionConfig.fromJson(source);
-        assertEquals(6.0, config.movementBudgetBlocks());
+        assertEquals(10.0, config.movementBudgetBlocks());
         assertEquals(3.0, config.attackReachBlocks());
         assertTrue(config.endTurnWhenSpent());
         assertReported(source, ConfigIssue.Kind.MISSING, "actions.movement_budget_blocks");
@@ -95,7 +97,7 @@ class ActionConfigTest {
     void missingActionsObjectFallsBackToEveryDefault() {
         ConfigSource source = source("{}");
         ActionConfig config = ActionConfig.fromJson(source);
-        assertEquals(6.0, config.movementBudgetBlocks());
+        assertEquals(10.0, config.movementBudgetBlocks());
         assertEquals(4.0, config.attackReachBlocks());
         assertReported(source, ConfigIssue.Kind.MISSING, "actions");
     }
@@ -104,9 +106,31 @@ class ActionConfigTest {
     void negativeMovementBudgetFallsBackToItsDefaultAlone() {
         ConfigSource source = source(complete("-1.0"));
         ActionConfig config = ActionConfig.fromJson(source);
-        assertEquals(6.0, config.movementBudgetBlocks());
+        assertEquals(10.0, config.movementBudgetBlocks());
         assertEquals(10, config.hideObserverPerceptionBonus());
         assertReported(source, ConfigIssue.Kind.INVALID, "actions.movement_budget_blocks");
+    }
+
+    @Test
+    void parsesTheMovementFields() {
+        ActionConfig config = ActionConfig.fromJson(source(complete("6.0")));
+        assertEquals(6.0, config.movementBudgetBlocks());
+        assertFalse(config.movementScalesWithSpeed());
+        assertFalse(config.teleportsCostMovement());
+    }
+
+    /** A config written before movement followed speed and teleports cost it gets both, on. */
+    @Test
+    void missingMovementTogglesDefaultToOn() {
+        ConfigSource source = source(complete("6.0")
+                .replace("\"movement_scales_with_speed\": false,\n", "")
+                .replace("\"teleports_cost_movement\": false,\n", ""));
+        ActionConfig config = ActionConfig.fromJson(source);
+        assertTrue(config.movementScalesWithSpeed());
+        assertTrue(config.teleportsCostMovement());
+        assertEquals(6.0, config.movementBudgetBlocks());
+        assertReported(source, ConfigIssue.Kind.MISSING, "actions.movement_scales_with_speed");
+        assertReported(source, ConfigIssue.Kind.MISSING, "actions.teleports_cost_movement");
     }
 
     @Test
@@ -190,7 +214,7 @@ class ActionConfigTest {
     void overflowingMovementBudgetFallsBackToItsDefault() {
         ConfigSource source = source(complete("1e400"));
         ActionConfig config = ActionConfig.fromJson(source);
-        assertEquals(6.0, config.movementBudgetBlocks());
+        assertEquals(10.0, config.movementBudgetBlocks());
         assertReported(source, ConfigIssue.Kind.INVALID, "actions.movement_budget_blocks");
     }
 

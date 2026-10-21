@@ -54,6 +54,10 @@ So `actions.end_turn_when_spent` — which used to end a player's turn the momen
 movement were gone — now **defaults off**, and a turn you have spent stays yours until you end it.
 Turn it back on if you prefer the old convenience.
 
+The **End Turn** key (default **Enter**, rebindable under Controls → Critfall: Initiative) does
+exactly what the End Turn button does, and nothing while the button is greyed. Pressing it also
+drops a target you were aiming.
+
 Mobs have no bar to click, so `actions.mob_end_turn_when_spent` (default **on**) keeps ending their
 turn once their action is spent. Turning it off leaves mobs sitting out the timeout, which is
 rarely what you want.

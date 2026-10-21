@@ -93,4 +93,9 @@ public class ReactionGameTests {
     public void participantRemovalClearsEveryFlag(GameTestHelper helper) {
         ReactionScenarios.participantRemovalClearsEveryFlag(helper);
     }
+
+    @GameTest(template = TEMPLATE, batch = "m4bHiddenMover")
+    public void aHiddenMoverProvokesNoOpportunityAttack(GameTestHelper helper) {
+        ReactionScenarios.aHiddenMoverProvokesNoOpportunityAttack(helper);
+    }
 }

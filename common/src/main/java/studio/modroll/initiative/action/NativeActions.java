@@ -86,13 +86,19 @@ public final class NativeActions {
         return ActionResult.performed(won);
     }
 
-    /** Ender-pearl blink: consume a pearl and teleport up to the configured distance along facing. */
+    /**
+     * Ender-pearl blink: consume a pearl and teleport up to the configured distance along facing. The
+     * blink is paid for with the action, so the turn's movement picks up from where it lands rather
+     * than charging — or refusing — the jump as a walk.
+     */
     static ActionResult performBlink(ActionContext context) {
         ActionConfig actions = InitiativeConfig.actions();
         if (!consumeOne(context.actor(), Items.ENDER_PEARL)) {
             return ActionResult.rejected(ActionStatus.MISSING_ITEM);
         }
         teleportAlongFacing(context.actor(), actions.blinkMaxBlocks());
+        ActionEconomy.encounterOf(context.level(), context.actor())
+                .setMovementAnchor(context.actor().position());
         return ActionResult.performed();
     }
 
@@ -146,7 +152,7 @@ public final class NativeActions {
         boolean won = escapeContestWon(context, grappler, grapple);
         if (won) {
             Grapples.release(context.level(), actor);
-            context.grantMovement(InitiativeConfig.actions().movementBudgetBlocks());
+            context.grantMovement(MovementSpeed.fullBudget(actor));
         }
         return ActionResult.performed(won);
     }
@@ -179,7 +185,7 @@ public final class NativeActions {
         }
         double x = actor.getX() + (look.x / horizontal) * maxBlocks;
         double z = actor.getZ() + (look.z / horizontal) * maxBlocks;
-        actor.teleportTo(x, actor.getY(), z);
+        Teleports.moveAsInitiative(actor, new Vec3(x, actor.getY(), z));
     }
 
     private static ItemStack heldFishingRod(LivingEntity actor) {

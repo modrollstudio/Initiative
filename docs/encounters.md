@@ -33,8 +33,15 @@ Server-side only; clients receive nothing yet. All values come from [config](con
   while a participant is **hidden**: concealment is what took the mob's target away, not the mob
   calming down (see [Hide](actions.md#hidden-also-hides-you-from-mob-ai)). A player who
   disconnects is dropped at once rather than a tick later; see [multiplayer](multiplayer.md).
+- **Joining a fight from outside** — a player who attacks a participant, or is attacked by one,
+  joins that participant's fight from anywhere, even when the participant would not start a fight
+  on its own: a neutral iron golem another player provoked is frozen off its turn and can never turn
+  on a newcomer, so the newcomer's own hit is what brings them in. Like every fight-starting hit,
+  that first hit lands as plain vanilla damage; the next one waits for the newcomer's turn.
 - **End** — an encounter ends when it no longer has both a player participant and a hostile
-  participant. Level unload and server stop end all affected encounters immediately.
+  participant, or when every player in it is [hidden](actions.md#hidden-also-hides-you-from-mob-ai)
+  (`end_when_all_hidden`): its mobs lose track of the hiders. Level unload and server stop end all
+  affected encounters immediately.
 
 ## Who gets pulled in
 

@@ -32,8 +32,8 @@ final class ScenarioSupport {
      * batches, so every suite must pin the economy explicitly to stay order-independent.
      */
     static final ActionConfig ACTIONS_OFF = new ActionConfig(
-            false, 6.0, true, 4.0, true, true, true, true, true, true, true, true, 3.0, 10, 0, true, true, 3.0, 1.0, 0,
-            0, true, 8.0, true, 1.0, 0, 0);
+            false, 6.0, true, true, true, 4.0, true, true, true, true, true, true, true, true, 3.0, 10, 0, true, true,
+            3.0, 1.0, 0, 0, true, 8.0, true, 1.0, 0, 0);
 
     /**
      * Pre-M5b suites drive attacks in open plots and must see exactly the no-cover, free-placement

@@ -36,6 +36,7 @@ public final class Encounter {
     private int budgetRound = -1;
     private UUID budgetActor;
     private Vec3 movementAnchor;
+    private boolean teleported;
 
     public Encounter(Vec3 center) {
         this.center = center;
@@ -122,6 +123,7 @@ public final class Encounter {
             budgetRound = round;
             budgetActor = actor;
             movementAnchor = null;
+            teleported = false;
             budget.reset(movementBudget);
             flags.beginTurn(actor);
         }
@@ -142,6 +144,18 @@ public final class Encounter {
 
     public void setMovementAnchor(Vec3 anchor) {
         movementAnchor = anchor;
+    }
+
+    /** The acting participant teleported this tick, so the movement it is charged for was not a walk. */
+    public void noteTeleport() {
+        teleported = true;
+    }
+
+    /** Whether the acting participant teleported since the last ask; asking clears it. */
+    public boolean consumeTeleport() {
+        boolean noted = teleported;
+        teleported = false;
+        return noted;
     }
 
     public Set<UUID> participants() {

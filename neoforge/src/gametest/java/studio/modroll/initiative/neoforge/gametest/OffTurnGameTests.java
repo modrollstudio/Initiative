@@ -73,4 +73,9 @@ public class OffTurnGameTests {
     public void theToggleOffRestoresFreeMovement(GameTestHelper helper) {
         OffTurnScenarios.theToggleOffRestoresFreeMovement(helper);
     }
+
+    @GameTest(template = TEMPLATE, batch = "offTurnCrossbow")
+    public void aCrossbowLoadedOffTurnFiresOnYourTurn(GameTestHelper helper) {
+        OffTurnScenarios.aCrossbowLoadedOffTurnFiresOnYourTurn(helper);
+    }
 }

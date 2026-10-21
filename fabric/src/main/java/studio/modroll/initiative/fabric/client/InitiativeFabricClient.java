@@ -22,7 +22,7 @@ import studio.modroll.initiative.ui.client.ActionBarRenderer;
 import studio.modroll.initiative.ui.client.ActionUiInput;
 
 /**
- * The Fabric client wiring: payload receivers, the HUD render callback, the action-panel key, and
+ * The Fabric client wiring: payload receivers, the HUD render callback, the action-panel and End Turn keys, and
  * the tick that lets a targeting click be consumed before vanilla sees it. The drawing itself lives
  * in {@code common}'s {@code client} packages.
  */
@@ -31,9 +31,13 @@ public final class InitiativeFabricClient implements ClientModInitializer {
     private static final KeyMapping ACTION_PANEL = new KeyMapping(
             "key.initiative.action_panel", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_R, "key.categories.initiative");
 
+    private static final KeyMapping END_TURN = new KeyMapping(
+            "key.initiative.end_turn", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_ENTER, "key.categories.initiative");
+
     @Override
     public void onInitializeClient() {
         KeyBindingHelper.registerKeyBinding(ACTION_PANEL);
+        KeyBindingHelper.registerKeyBinding(END_TURN);
         ActionUiInput.setSender(ClientPlayNetworking::send);
         ClientPlayNetworking.registerGlobalReceiver(
                 TurnOrderPayload.TYPE, (payload, context) -> TurnOrderClientCache.accept(payload.snapshot()));
@@ -51,6 +55,9 @@ public final class InitiativeFabricClient implements ClientModInitializer {
             ActionUiInput.tick(client);
             while (ACTION_PANEL.consumeClick()) {
                 ActionUiInput.openPanel();
+            }
+            while (END_TURN.consumeClick()) {
+                ActionUiInput.endTurn();
             }
         });
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {

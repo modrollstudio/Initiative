@@ -43,15 +43,17 @@ public final class ActionUiScenarios {
 
     private static final ResourceLocation PROBE = ResourceLocation.fromNamespaceAndPath("initiativetest", "ui_probe");
 
+    /** A lone player hides here to watch the bar, so the fight must not end on everyone hiding. */
     private static final EncounterConfig TIGHT_BUBBLE =
-            new EncounterConfig(true, true, true, false, true, true, true, 1.0, 30.0);
+            new EncounterConfig(true, true, true, false, true, true, true, false, 1.0, 30.0);
+
     private static final TurnConfig TURNS = new TurnConfig(true, 200, 200, 20.0, 12, false, false, false, Set.of());
     private static final ActionConfig ACTIONS = new ActionConfig(
-            true, 6.0, true, 4.0, false, true, true, true, true, true, true, true, 3.0, 0, 0, true, true, 3.0, 1.0, 0,
-            0, true, 8.0, true, 1.0, 0, 0);
+            true, 6.0, true, true, true, 4.0, false, true, true, true, true, true, true, true, 3.0, 0, 0, true, true,
+            3.0, 1.0, 0, 0, true, 8.0, true, 1.0, 0, 0);
     private static final ActionConfig DASH_OFF = new ActionConfig(
-            true, 6.0, true, 4.0, false, true, false, true, true, true, true, true, 3.0, 0, 0, true, true, 3.0, 1.0, 0,
-            0, true, 8.0, true, 1.0, 0, 0);
+            true, 6.0, true, true, true, 4.0, false, true, false, true, true, true, true, true, 3.0, 0, 0, true, true,
+            3.0, 1.0, 0, 0, true, 8.0, true, 1.0, 0, 0);
 
     private static final List<Integer> PLAYER_FIRST = List.of(20, 1);
     private static final List<Integer> PLAYER_FIRST_TWO_HOSTILES = List.of(20, 5, 1);

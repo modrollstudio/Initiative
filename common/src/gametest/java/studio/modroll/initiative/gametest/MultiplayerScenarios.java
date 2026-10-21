@@ -42,18 +42,18 @@ import studio.modroll.initiative.ui.ActionUiSnapshots;
 public final class MultiplayerScenarios {
 
     private static final EncounterConfig TIGHT_BUBBLE =
-            new EncounterConfig(true, true, true, false, true, true, true, 1.0, 30.0);
+            new EncounterConfig(true, true, true, false, true, true, true, true, 1.0, 30.0);
     /** Wide enough that the radius sweep reaches a player standing beside the one who attacked. */
     private static final EncounterConfig PARTY_BUBBLE =
-            new EncounterConfig(true, true, true, false, true, true, true, 4.0, 30.0);
+            new EncounterConfig(true, true, true, false, true, true, true, true, 4.0, 30.0);
 
     private static final EncounterConfig PARTY_PULL_OFF =
-            new EncounterConfig(true, true, true, false, true, false, true, 4.0, 30.0);
+            new EncounterConfig(true, true, true, false, true, false, true, true, 4.0, 30.0);
     private static final TurnConfig TURNS = new TurnConfig(true, 200, 200, 20.0, 12, false, false, false, Set.of());
     private static final TurnConfig SHORT_TURNS = new TurnConfig(true, 20, 20, 20.0, 12, true, false, false, Set.of());
     private static final ActionConfig ACTIONS = new ActionConfig(
-            true, 6.0, true, 4.0, false, true, true, true, true, true, true, true, 3.0, 0, 0, true, true, 3.0, 1.0, 0,
-            0, true, 8.0, true, 1.0, 0, 0);
+            true, 6.0, true, true, true, 4.0, false, true, true, true, true, true, true, true, 3.0, 0, 0, true, true,
+            3.0, 1.0, 0, 0, true, 8.0, true, 1.0, 0, 0);
 
     private static final RollAnimationConfig SHARED = new RollAnimationConfig(true, 10, 10, 2, true, true);
     private static final RollAnimationConfig NOT_SHARED = new RollAnimationConfig(true, 10, 10, 2, true, false);

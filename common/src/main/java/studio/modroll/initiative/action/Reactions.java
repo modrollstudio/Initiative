@@ -34,7 +34,7 @@ public final class Reactions {
 
     /**
      * Resolves an opportunity attack for every eligible hostile reactor whose reach {@code mover}
-     * left this turn. Each reactor's attack is driven through {@code RollService.performAttack} in
+     * left this turn. A hidden mover provokes none: no reactor can see it go. Each reactor's attack is driven through {@code RollService.performAttack} in
      * isolation — this never touches {@link studio.modroll.initiative.turn.TurnOrder}, the mover's
      * own {@link TurnBudget}, or {@link AiFreeze}.
      */
@@ -43,7 +43,7 @@ public final class Reactions {
         if (!InitiativeConfig.actions().opportunityAttack()) {
             return;
         }
-        if (encounter.flags().isDisengaged(mover.getUUID())) {
+        if (encounter.flags().isDisengaged(mover.getUUID()) || Concealment.hides(encounter, mover.getUUID())) {
             return;
         }
         double reach = InitiativeConfig.actions().opportunityAttackReachBlocks();

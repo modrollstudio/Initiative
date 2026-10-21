@@ -49,12 +49,14 @@ import studio.modroll.initiative.turn.InitiativeEntry;
  */
 public final class ChecksScenarios {
 
+    /** The Hide scenarios need the lone hider's fight to run on to the watcher's turn. */
     private static final EncounterConfig TIGHT_BUBBLE =
-            new EncounterConfig(true, true, true, false, true, true, true, 1.0, 40.0);
+            new EncounterConfig(true, true, true, false, true, true, true, false, 1.0, 40.0);
+
     private static final TurnConfig TURNS = new TurnConfig(true, 1000, 1000, 20.0, 12, false, false, false, Set.of());
     private static final ActionConfig ACTIONS = new ActionConfig(
-            true, 6.0, true, 4.0, false, true, true, true, true, true, true, false, 3.0, 0, 0, true, true, 3.0, 1.0, 0,
-            0, true, 8.0, true, 1.0, 0, 0);
+            true, 6.0, true, true, true, 4.0, false, true, true, true, true, true, true, false, 3.0, 0, 0, true, true,
+            3.0, 1.0, 0, 0, true, 8.0, true, 1.0, 0, 0);
     private static final ChecksConfig CHECKS_ON = new ChecksConfig(true);
     private static final boolean WITHOUT_CHECKS = Boolean.getBoolean("initiative.gametest.withoutChecks");
 

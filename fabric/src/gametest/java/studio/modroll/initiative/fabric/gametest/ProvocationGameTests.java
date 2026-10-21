@@ -57,4 +57,9 @@ public class ProvocationGameTests implements FabricGameTest {
     public void disabledFlagStillRefusesAnOutsiderSwing(GameTestHelper helper) {
         ProvocationScenarios.disabledFlagStillRefusesAnOutsiderSwing(helper);
     }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE, batch = "neutralOutsider")
+    public void anOutsiderWhoHitsAParticipantJoinsItsFight(GameTestHelper helper) {
+        ProvocationScenarios.anOutsiderWhoHitsAParticipantJoinsItsFight(helper);
+    }
 }

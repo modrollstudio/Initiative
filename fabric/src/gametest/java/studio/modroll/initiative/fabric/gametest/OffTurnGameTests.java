@@ -67,4 +67,9 @@ public class OffTurnGameTests implements FabricGameTest {
     public void theToggleOffRestoresFreeMovement(GameTestHelper helper) {
         OffTurnScenarios.theToggleOffRestoresFreeMovement(helper);
     }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE, batch = "offTurnCrossbow")
+    public void aCrossbowLoadedOffTurnFiresOnYourTurn(GameTestHelper helper) {
+        OffTurnScenarios.aCrossbowLoadedOffTurnFiresOnYourTurn(helper);
+    }
 }

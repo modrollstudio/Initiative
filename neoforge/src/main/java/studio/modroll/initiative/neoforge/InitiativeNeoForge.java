@@ -2,6 +2,7 @@ package studio.modroll.initiative.neoforge;
 
 import net.minecraft.Util;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
@@ -55,7 +56,8 @@ import studio.modroll.initiative.ui.ActionUiSync;
 /**
  * The NeoForge server-side wiring: every listener here translates one NeoForge event into a call on
  * the loader-agnostic code in {@code common} and does nothing else. Where NeoForge has no event —
- * the mob AI step, the overlay message — a mixin in {@code neoforge.mixin} stands in and says why.
+ * the mob AI step, the overlay message, every player teleport — a mixin in {@code neoforge.mixin}
+ * stands in and says why.
  */
 @Mod(Initiative.MOD_ID)
 public final class InitiativeNeoForge {
@@ -78,7 +80,7 @@ public final class InitiativeNeoForge {
         NeoForge.EVENT_BUS.addListener(InitiativeNeoForge::onBlockBreak);
         NeoForge.EVENT_BUS.addListener(PlayerInteractEvent.LeftClickBlock.class, InitiativeNeoForge::onInteract);
         NeoForge.EVENT_BUS.addListener(PlayerInteractEvent.RightClickBlock.class, InitiativeNeoForge::onInteract);
-        NeoForge.EVENT_BUS.addListener(PlayerInteractEvent.RightClickItem.class, InitiativeNeoForge::onInteract);
+        NeoForge.EVENT_BUS.addListener(InitiativeNeoForge::onUseItem);
         NeoForge.EVENT_BUS.addListener(PlayerInteractEvent.EntityInteract.class, InitiativeNeoForge::onInteract);
         NeoForge.EVENT_BUS.addListener(
                 PlayerInteractEvent.EntityInteractSpecific.class, InitiativeNeoForge::onInteract);
@@ -114,20 +116,29 @@ public final class InitiativeNeoForge {
         }
     }
 
+    /**
+     * A connection that never registered Initiative's payloads cannot take one, and NeoForge throws
+     * mid-tick rather than drop it. Only a GameTest's mock player reaches that today, since a real
+     * client without Initiative is refused at login, but a HUD update is not worth the server tick.
+     */
+    private static boolean canReceive(ServerPlayer player, CustomPacketPayload.Type<?> type) {
+        return player.connection.hasChannel(type);
+    }
+
     private static void sendTurnOrder(Player player, TurnOrderSnapshot snapshot) {
-        if (player instanceof ServerPlayer serverPlayer) {
+        if (player instanceof ServerPlayer serverPlayer && canReceive(serverPlayer, TurnOrderPayload.TYPE)) {
             PacketDistributor.sendToPlayer(serverPlayer, new TurnOrderPayload(snapshot));
         }
     }
 
     private static void sendRollAnimation(Player player, RollAnimation animation) {
-        if (player instanceof ServerPlayer serverPlayer) {
+        if (player instanceof ServerPlayer serverPlayer && canReceive(serverPlayer, RollAnimationPayload.TYPE)) {
             PacketDistributor.sendToPlayer(serverPlayer, new RollAnimationPayload(animation));
         }
     }
 
     private static void sendActionUi(Player player, ActionUiSnapshot snapshot) {
-        if (player instanceof ServerPlayer serverPlayer) {
+        if (player instanceof ServerPlayer serverPlayer && canReceive(serverPlayer, ActionUiPayload.TYPE)) {
             PacketDistributor.sendToPlayer(serverPlayer, new ActionUiPayload(snapshot));
         }
     }
@@ -228,6 +239,17 @@ public final class InitiativeNeoForge {
         if (OffTurnRestriction.preventsInteraction(level, event.getEntity())) {
             event.setCanceled(true);
             OffTurnRestriction.sendRefusal(event.getEntity());
+        }
+    }
+
+    /** Using an item off turn, which unlike the other reaches may load a crossbow. */
+    private static void onUseItem(PlayerInteractEvent.RightClickItem event) {
+        if (!(event.getLevel() instanceof ServerLevel level)) {
+            return;
+        }
+        if (OffTurnRestriction.preventsItemUse(level, event.getEntity(), event.getItemStack())) {
+            event.setCanceled(true);
+            OffTurnRestriction.refuseItemUse(event.getEntity());
         }
     }
 

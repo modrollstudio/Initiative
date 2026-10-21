@@ -4,7 +4,7 @@
   "package": "studio.modroll.initiative.fabric.mixin",
   "compatibilityLevel": "JAVA_21",
   "refmap": "initiative.refmap.json",
-  "mixins": ["BlockPlacementMixin", "MobAiStepMixin", "MobTargetMixin"],
+  "mixins": ["BlockPlacementMixin", "MobAiStepMixin", "MobTargetMixin", "PlayerTeleportMixin"],
   "client": ["FieldOfViewMixin", "OverlayMessageMixin"],
   "injectors": {
     "defaultRequire": 1

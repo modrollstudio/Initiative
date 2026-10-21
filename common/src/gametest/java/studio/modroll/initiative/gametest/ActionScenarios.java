@@ -34,11 +34,11 @@ import studio.modroll.initiative.encounter.EncounterManager;
 public final class ActionScenarios {
 
     private static final EncounterConfig TIGHT_BUBBLE =
-            new EncounterConfig(true, true, true, false, true, true, true, 1.0, 30.0);
+            new EncounterConfig(true, true, true, false, true, true, true, true, 1.0, 30.0);
     private static final TurnConfig TURNS = new TurnConfig(true, 1000, 1000, 20.0, 12, false, false, false, Set.of());
     private static final ActionConfig ACTIONS = new ActionConfig(
-            true, 6.0, true, 4.0, true, true, true, true, true, true, true, true, 3.0, 10, 0, true, true, 3.0, 1.0, 0,
-            0, true, 8.0, true, 1.0, 0, 0);
+            true, 6.0, true, true, true, 4.0, true, true, true, true, true, true, true, true, 3.0, 10, 0, true, true,
+            3.0, 1.0, 0, 0, true, 8.0, true, 1.0, 0, 0);
     /** Player natural drawn first (attacker joins first), so (20, 1) puts the player's turn first. */
     private static final List<Integer> PLAYER_FIRST = List.of(20, 1);
 
@@ -415,8 +415,8 @@ public final class ActionScenarios {
         prepare(
                 helper,
                 new ActionConfig(
-                        false, 6.0, true, 4.0, true, true, true, true, true, true, true, true, 3.0, 10, 0, true, true,
-                        3.0, 1.0, 0, 0, true, 8.0, true, 1.0, 0, 0));
+                        false, 6.0, true, true, true, 4.0, true, true, true, true, true, true, true, true, 3.0, 10, 0,
+                        true, true, 3.0, 1.0, 0, 0, true, 8.0, true, 1.0, 0, 0));
         Player player = ScenarioSupport.spawnPlayer(helper, 1, 1);
         Husk husk = ScenarioSupport.spawnHusk(helper, 3, 3);
         ScenarioSupport.formEncounter(helper, player, PLAYER_FIRST, husk);

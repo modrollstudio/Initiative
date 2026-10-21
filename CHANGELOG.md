@@ -2,6 +2,49 @@
 
 ## [0.2.0] - Unreleased
 
+- **Ender pearls no longer carry you out of a fight.** A participant could throw a pearl and land
+  outside the encounter, leaving it before the movement budget could stop them. Every teleport in an
+  encounter (ender pearl, chorus fruit, `/tp`, another mod's) now counts as movement on your own
+  turn: it is refused if it goes farther than the movement you have left, and otherwise costs the
+  distance it covered. Off your turn every teleport is refused. A refused pearl is still spent and
+  still hurts. A teleport provokes no opportunity attack. New `actions.teleports_cost_movement`
+  (default on); off stops checking teleports on your own turn. Blink no longer counts its jump as
+  movement either: it already costs the action.
+
+- **Mobs can't attack a hidden participant.** Hiding took a mob's AI target away, but its turn
+  still attacked the nearest enemy, hidden or not, and walking away from it while hidden provoked
+  an opportunity attack. A mob's turn now never picks a hidden participant, and a hidden mover
+  provokes no opportunity attack.
+
+- **Hiding as a party ends the fight.** When every player in an encounter is hidden, the encounter
+  ends and its mobs lose track of them. The mobs drop them as targets, and the players stay out of
+  mob targeting until they attack something, a mob hurts them, they join another fight or they
+  walk out past `leave_radius`. New `encounters.end_when_all_hidden` (default on); off means hiding
+  never ends a fight.
+
+- **10 blocks of movement, scaled by speed.** `movement_budget_blocks` now defaults to 10 instead
+  of 6, and each participant's budget follows its movement speed against its own walking speed:
+  Swiftness I gives 12 blocks and Slowness I gives 8.5. Sprinting as your turn starts doesn't
+  count. Dash and Escape grant the same scaled amount. An existing `initiative.json` keeps its
+  own `movement_budget_blocks`. New `actions.movement_scales_with_speed` (default on); off gives
+  every participant the flat budget.
+
+- **End your turn with Enter.** A new End Turn key, default Enter, does what the End Turn button
+  does. Rebind it under Controls.
+
+- **Crossbows loaded off turn now fire on your turn.** Using an item off turn was refused on the
+  server, but the client had already acted on it, so it showed a crossbow as loaded that the server
+  never loaded, and on your turn the click to fire started a new load instead. Loading a crossbow is
+  now allowed off turn; firing still waits for your turn. A refused use now resends your inventory,
+  so the client stops showing items it didn't actually use.
+
+- **Hitting a participant from outside the fight pulls you in.** A player who attacked a mob that
+  was already in someone else's fight, such as an iron golem another player had provoked, landed
+  plain vanilla damage with no roll. Critfall doesn't roll for a participant, and the frozen golem
+  could never turn on the newcomer to bring them in. A player who attacks a participant, or is
+  attacked by one, now joins that fight. The first hit lands as vanilla damage like every hit that
+  starts a fight, and the next one waits for your turn.
+
 - **Shove, Grapple, Escape and Hide roll real skills with Critfall: Checks.** Their contests used
   flat config bonuses, the same for every participant. With Checks 0.1.0 or newer installed they now
   roll each side's own skills through it. Shove and Grapple are your Athletics against the target's

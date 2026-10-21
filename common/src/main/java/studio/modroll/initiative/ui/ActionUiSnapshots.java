@@ -8,13 +8,13 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import studio.modroll.initiative.action.ActionEconomy;
 import studio.modroll.initiative.action.ActionGate;
+import studio.modroll.initiative.action.MovementSpeed;
 import studio.modroll.initiative.action.TurnBudget;
 import studio.modroll.initiative.api.Action;
 import studio.modroll.initiative.api.ActionCost;
 import studio.modroll.initiative.api.ActionRegistry;
 import studio.modroll.initiative.api.ActionStatus;
 import studio.modroll.initiative.api.ActionTargeting;
-import studio.modroll.initiative.config.ActionConfig;
 import studio.modroll.initiative.config.InitiativeConfig;
 import studio.modroll.initiative.encounter.Encounter;
 import studio.modroll.initiative.turn.TurnOrder;
@@ -35,7 +35,6 @@ public final class ActionUiSnapshots {
         if (!player.getUUID().equals(encounter.turnOrder().currentTurn().orElse(null))) {
             return ActionUiSnapshot.INACTIVE;
         }
-        ActionConfig actions = InitiativeConfig.actions();
         List<ActionUiSnapshot.Entry> entries = new ArrayList<>();
         for (Action action : ActionRegistry.all()) {
             if (action.cost() == ActionCost.REACTION || !action.enabled() || !action.availableTo(player)) {
@@ -47,7 +46,7 @@ public final class ActionUiSnapshots {
         return new ActionUiSnapshot(
                 true,
                 List.copyOf(entries),
-                budget(encounter, player, actions),
+                budget(encounter, player),
                 encounter.turnOrder().secondsRemaining(timeoutTicks),
                 TurnOrder.seconds(timeoutTicks));
     }
@@ -83,13 +82,13 @@ public final class ActionUiSnapshots {
     }
 
     /** Movement is rounded to a tenth of a block so a walking player does not resend every tick. */
-    private static ActionUiSnapshot.Budget budget(Encounter encounter, Player player, ActionConfig actions) {
-        TurnBudget budget = ActionEconomy.budgetOf(encounter, player.getUUID());
+    private static ActionUiSnapshot.Budget budget(Encounter encounter, Player player) {
+        TurnBudget budget = ActionEconomy.budgetOf(encounter, player);
         return new ActionUiSnapshot.Budget(
                 budget.actionAvailable(),
                 budget.bonusActionAvailable(),
                 encounter.flags().hasReaction(player.getUUID()),
                 Math.round(budget.movementRemaining() * MOVEMENT_STEP) / MOVEMENT_STEP,
-                actions.movementBudgetBlocks());
+                MovementSpeed.fullBudget(player));
     }
 }

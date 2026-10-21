@@ -39,9 +39,9 @@ import studio.modroll.initiative.encounter.EncounterManager;
 public final class EncounterScenarios {
 
     private static final EncounterConfig TEST_CONFIG =
-            new EncounterConfig(true, true, true, false, true, true, true, 3.0, 5.0);
+            new EncounterConfig(true, true, true, false, true, true, true, true, 3.0, 5.0);
     private static final EncounterConfig SIGHT_NOT_REQUIRED =
-            new EncounterConfig(true, true, true, false, true, true, false, 3.0, 5.0);
+            new EncounterConfig(true, true, true, false, true, true, false, true, 3.0, 5.0);
     private static final TurnConfig TURNS_DISABLED =
             new TurnConfig(false, 100, 100, 20.0, 12, false, false, false, Set.of());
 
@@ -174,7 +174,7 @@ public final class EncounterScenarios {
     }
 
     public static void disabledFlagFormsNoEncounter(GameTestHelper helper) {
-        prepare(helper, new EncounterConfig(false, true, true, false, true, true, true, 3.0, 5.0));
+        prepare(helper, new EncounterConfig(false, true, true, false, true, true, true, true, 3.0, 5.0));
         Player player = spawnPlayer(helper, 1, 1);
         Husk husk = spawnHusk(helper, 2, 2);
         husk.hurt(helper.getLevel().damageSources().playerAttack(player), 1.0f);

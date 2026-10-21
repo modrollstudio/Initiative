@@ -59,5 +59,6 @@
   "initiative.ui.pick_position": "%s: aim at a block, right click to cancel",
   "initiative.ui.target_ready": "%s — left click to confirm",
   "key.categories.initiative": "Critfall: Initiative",
-  "key.initiative.action_panel": "Open action panel"
+  "key.initiative.action_panel": "Open action panel",
+  "key.initiative.end_turn": "End turn"
 }

@@ -87,4 +87,9 @@ public class ReactionGameTests implements FabricGameTest {
     public void participantRemovalClearsEveryFlag(GameTestHelper helper) {
         ReactionScenarios.participantRemovalClearsEveryFlag(helper);
     }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE, batch = "m4bHiddenMover")
+    public void aHiddenMoverProvokesNoOpportunityAttack(GameTestHelper helper) {
+        ReactionScenarios.aHiddenMoverProvokesNoOpportunityAttack(helper);
+    }
 }

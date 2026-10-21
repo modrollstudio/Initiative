@@ -199,7 +199,7 @@ class ConfigMigrationTest {
     void anOverflowingNumberDefaultsThatKeyAlone(@TempDir Path configDir) throws IOException {
         write(configDir, customized().replace("\"movement_budget_blocks\": 9.0", "\"movement_budget_blocks\": 1e400"));
         InitiativeConfig.load(configDir);
-        assertEquals(6.0, InitiativeConfig.actions().movementBudgetBlocks());
+        assertEquals(10.0, InitiativeConfig.actions().movementBudgetBlocks());
         assertEquals(2.0, InitiativeConfig.actions().attackReachBlocks());
     }
 
@@ -234,7 +234,7 @@ class ConfigMigrationTest {
         assertTrue(InitiativeConfig.encounters().enabled());
         assertEquals(12.0, InitiativeConfig.encounters().triggerRadius());
         assertEquals(600, InitiativeConfig.turns().turnTimeoutTicks());
-        assertEquals(6.0, InitiativeConfig.actions().movementBudgetBlocks());
+        assertEquals(10.0, InitiativeConfig.actions().movementBudgetBlocks());
         assertEquals(2, InitiativeConfig.cover().halfCoverAcBonus());
         assertEquals(3.0, InitiativeConfig.grapple().reachBlocks());
         assertTrue(InitiativeConfig.hud().enabled());
