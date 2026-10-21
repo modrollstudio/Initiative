@@ -42,9 +42,8 @@ covers each key, and the other pages in [docs](docs) cover each system.
 
 Critfall is consumed from the [Modrinth maven](https://api.modrinth.com/maven) under the
 `maven.modrinth:critfall` coordinates pinned in `gradle.properties`. Checks is pinned the same way
-(`checks_*_modrinth_id`), but while those ids are empty its jars
-(`studio.modroll.checks:checks-<loader>:<checks_version>`) come from your local Maven repo: publish them
-from the Checks repo before building.
+(`checks_*_modrinth_id`), but while those ids are empty its jars come from CurseForge through
+[CurseMaven](https://www.cursemaven.com), pinned by the `checks_*_curseforge_*` ids.
 
 ```
 ./gradlew check    # unit tests + spotless
