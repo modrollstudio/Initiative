@@ -142,10 +142,9 @@ changes nothing. PvP is excluded here as everywhere else in M1: a player's arrow
 player forms no hostile participant.
 
 Once in, the shooter is an ordinary participant: initiative roll, freeze off-turn, suppression,
-and its shots between participants canceled like every other out-of-turn hit
-(see [actions](actions.md#initiative-is-the-sole-combat-driver)). Ranged **attack actions** are
-still deferred, so a pulled-in shooter has nothing to spend its turn on until it can reach melee;
-its turn ends on `mob_turn_timeout_ticks`.
+and its shots off its turn refused like every other out-of-turn act. On its own turn it fires one
+[ranged attack](actions.md#ranged-attacks), rolled by Critfall, as soon as its target is within long
+range and in sight.
 
 ## Critfall handoff
 

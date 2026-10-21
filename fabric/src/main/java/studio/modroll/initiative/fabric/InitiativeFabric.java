@@ -35,6 +35,7 @@ import net.minecraft.world.phys.EntityHitResult;
 import studio.modroll.initiative.Initiative;
 import studio.modroll.initiative.action.ActionEconomy;
 import studio.modroll.initiative.action.ActionSettingsLoader;
+import studio.modroll.initiative.action.RangedAttacks;
 import studio.modroll.initiative.checks.ChecksIntegration;
 import studio.modroll.initiative.command.InitiativeCommands;
 import studio.modroll.initiative.encounter.EncounterManager;
@@ -54,8 +55,9 @@ import studio.modroll.initiative.ui.ActionUiSync;
 /**
  * The Fabric server-side wiring: every callback here translates one Fabric event into a call on the
  * loader-agnostic code in {@code common} and does nothing else. Where Fabric has no event — block
- * placement, the mob AI step, target acquisition, the overlay message, every player teleport — a
- * mixin in {@code fabric.mixin} stands in and says why.
+ * placement, the mob AI step, target acquisition, the overlay message, every player teleport, a
+ * projectile entering the world, the rest of an arrow's hit — a mixin in {@code fabric.mixin} stands
+ * in and says why.
  */
 public final class InitiativeFabric implements ModInitializer {
 
@@ -85,7 +87,7 @@ public final class InitiativeFabric implements ModInitializer {
         UseEntityCallback.EVENT.register((player, world, hand, entity, hitResult) -> refuseOffTurn(world, player));
         UseItemCallback.EVENT.register(InitiativeFabric::onUseItem);
         ServerLivingEntityEvents.ALLOW_DAMAGE.register(
-                (entity, source, amount) -> !ActionEconomy.shouldCancelVanillaDamage(entity, source));
+                (entity, source, amount) -> !ActionEconomy.interceptVanillaDamage(entity, source));
         CommandRegistrationCallback.EVENT.register(
                 (dispatcher, registryAccess, environment) -> InitiativeCommands.register(dispatcher));
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(new ActionSettingsResourceLoader());
@@ -114,14 +116,25 @@ public final class InitiativeFabric implements ModInitializer {
         return offTurn(world, player) ? InteractionResult.FAIL : InteractionResult.PASS;
     }
 
-    /** Using an item off turn, which unlike the other reaches may load a crossbow. */
+    /**
+     * Using an item off turn, which unlike the other reaches may load a crossbow; and drawing or
+     * firing a ranged weapon, which waits for your turn and needs your action.
+     */
     private static InteractionResultHolder<ItemStack> onUseItem(Player player, Level world, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
-        if (!(world instanceof ServerLevel level) || !OffTurnRestriction.preventsItemUse(level, player, stack)) {
+        if (!(world instanceof ServerLevel level)) {
             return InteractionResultHolder.pass(stack);
         }
-        OffTurnRestriction.refuseItemUse(player);
-        return InteractionResultHolder.fail(stack);
+        if (OffTurnRestriction.preventsItemUse(level, player, stack)) {
+            OffTurnRestriction.refuseItemUse(player);
+            return InteractionResultHolder.fail(stack);
+        }
+        ActionEconomy.AttackStatus refused = RangedAttacks.refusesUse(level, player, stack);
+        if (refused != null) {
+            RangedAttacks.refuseUse(player, refused);
+            return InteractionResultHolder.fail(stack);
+        }
+        return InteractionResultHolder.pass(stack);
     }
 
     private static InteractionResult onAttackEntity(

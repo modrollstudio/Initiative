@@ -198,6 +198,9 @@ class ConcealmentTest {
                 true,
                 1.0,
                 0,
-                0);
+                0,
+                true,
+                24.0,
+                64.0);
     }
 }

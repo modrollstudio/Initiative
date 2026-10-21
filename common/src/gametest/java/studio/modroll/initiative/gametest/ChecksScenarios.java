@@ -56,7 +56,7 @@ public final class ChecksScenarios {
     private static final TurnConfig TURNS = new TurnConfig(true, 1000, 1000, 20.0, 12, false, false, false, Set.of());
     private static final ActionConfig ACTIONS = new ActionConfig(
             true, 6.0, true, true, true, 4.0, false, true, true, true, true, true, true, false, 3.0, 0, 0, true, true,
-            3.0, 1.0, 0, 0, true, 8.0, true, 1.0, 0, 0);
+            3.0, 1.0, 0, 0, true, 8.0, true, 1.0, 0, 0, true, 24.0, 64.0);
     private static final ChecksConfig CHECKS_ON = new ChecksConfig(true);
     private static final boolean WITHOUT_CHECKS = Boolean.getBoolean("initiative.gametest.withoutChecks");
 

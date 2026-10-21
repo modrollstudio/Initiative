@@ -1,12 +1,16 @@
 package studio.modroll.initiative.encounter;
 
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Predicate;
 import net.minecraft.world.phys.Vec3;
 import studio.modroll.initiative.action.EncounterFlags;
+import studio.modroll.initiative.action.RangedShot;
 import studio.modroll.initiative.action.TurnBudget;
 import studio.modroll.initiative.hud.TurnOrderSnapshot;
 import studio.modroll.initiative.turn.TurnOrder;
@@ -28,6 +32,7 @@ public final class Encounter {
     private final Map<UUID, Side> participants = new LinkedHashMap<>();
     private final Map<UUID, Long> joinedAtGameTime = new LinkedHashMap<>();
     private final Set<UUID> rangedAggressors = new LinkedHashSet<>();
+    private final Map<UUID, RangedShot> shots = new HashMap<>();
     private final TurnOrder turnOrder = new TurnOrder();
     private final TurnBudget budget = new TurnBudget();
     private final EncounterFlags flags = new EncounterFlags();
@@ -80,6 +85,7 @@ public final class Encounter {
         participants.remove(participant);
         joinedAtGameTime.remove(participant);
         rangedAggressors.remove(participant);
+        shots.values().removeIf(shot -> shot.shooter().equals(participant));
         lastActionUiSnapshots.remove(participant);
         turnOrder.remove(participant);
         flags.remove(participant);
@@ -92,6 +98,27 @@ public final class Encounter {
 
     public boolean isRangedAggressor(UUID participant) {
         return rangedAggressors.contains(participant);
+    }
+
+    /** Ties a projectile in flight to the ranged attack it belongs to. */
+    public void recordShot(UUID projectile, RangedShot shot) {
+        shots.put(projectile, shot);
+    }
+
+    /** The ranged attack this projectile was fired as, or null when it was fired as none. */
+    public RangedShot shot(UUID projectile) {
+        return shots.get(projectile);
+    }
+
+    /** The attack this shooter fired on this tick, which a second arrow of the same volley belongs to. */
+    public Optional<RangedShot> volley(UUID shooter, long gameTime) {
+        return shots.values().stream()
+                .filter(shot -> shot.shooter().equals(shooter) && shot.firedAt() == gameTime)
+                .findFirst();
+    }
+
+    public void forgetShots(Predicate<UUID> projectileGone) {
+        shots.keySet().removeIf(projectileGone);
     }
 
     /**

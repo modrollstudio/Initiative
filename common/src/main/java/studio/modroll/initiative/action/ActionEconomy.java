@@ -282,13 +282,23 @@ public final class ActionEconomy {
      */
     private static RollMode attackMode(
             Encounter encounter, ActionConfig actions, LivingEntity attacker, LivingEntity target) {
+        return resolveMode(
+                spendAttackerAdvantage(encounter, actions, attacker),
+                targetImposesDisadvantage(encounter, actions, target));
+    }
+
+    /** The attacker's own advantage sources, Help and hiding, which attacking spends. */
+    static boolean spendAttackerAdvantage(Encounter encounter, ActionConfig actions, LivingEntity attacker) {
         boolean helpAdvantage = actions.help() && encounter.flags().consumeHelpAdvantage(attacker.getUUID());
         boolean hiddenAdvantage = actions.hide() && encounter.flags().consumeHidden(attacker.getUUID());
-        boolean advantage = helpAdvantage || hiddenAdvantage;
+        return helpAdvantage || hiddenAdvantage;
+    }
+
+    /** The target's own disadvantage sources, Dodge and hiding, which are only read. */
+    static boolean targetImposesDisadvantage(Encounter encounter, ActionConfig actions, LivingEntity target) {
         boolean targetDodging = actions.dodge() && encounter.flags().isDodging(target.getUUID());
         boolean targetHidden = actions.hide() && encounter.flags().isHidden(target.getUUID());
-        boolean disadvantage = targetDodging || targetHidden;
-        return resolveMode(advantage, disadvantage);
+        return targetDodging || targetHidden;
     }
 
     static RollMode resolveMode(boolean advantage, boolean disadvantage) {
@@ -347,6 +357,7 @@ public final class ActionEconomy {
             return;
         }
         ActionConfig actions = InitiativeConfig.actions();
+        RangedAttacks.forgetLanded(level, encounter);
         Grapples.reconcile(level, encounter);
         PassivePerception.revealHidersSpottedBy(encounter, actor);
         TurnBudget budget = budgetOf(encounter, actor);
@@ -392,13 +403,23 @@ public final class ActionEconomy {
         }
     }
 
-    /** The mob turn: one driven attack on the nearest enemy in melee reach. */
+    /**
+     * The mob turn: one driven attack on the nearest enemy — a shot once it is in range and sight for
+     * a mob with a bow, crossbow or trident in hand, a melee swing once it is in reach for any other.
+     */
     private static void driveMobTurn(ServerLevel level, Encounter encounter, Mob mob, TurnBudget budget) {
         if (!budget.actionAvailable()) {
             return;
         }
         LivingEntity target = nearestEnemy(level, encounter, mob);
-        if (target == null || !mob.isWithinMeleeAttackRange(target)) {
+        if (target == null) {
+            return;
+        }
+        if (RangedAttacks.shootsOnItsTurn(mob)) {
+            RangedAttacks.shoot(level, encounter, mob, target);
+            return;
+        }
+        if (!mob.isWithinMeleeAttackRange(target)) {
             return;
         }
         if (attack(level, mob, target).status() == AttackStatus.PERFORMED) {
@@ -447,9 +468,11 @@ public final class ActionEconomy {
      * the economy is active — except Critfall's own driven hurt, which {@code isDrivenDamage}
      * reports while {@code performAttack} is applying rolled damage to the target. Membership is
      * read as of the previous tick ({@link Encounter#joinedBefore}), so the encounter-forming hit —
-     * which joins both sides mid-hurt — still lands as plain vanilla damage on every loader.
+     * which joins both sides mid-hurt — still lands as plain vanilla damage on every loader. The
+     * arrow of a ranged attack is canceled the same way, and its roll is driven here in its place
+     * ({@link RangedAttacks#land}). True means the loader cancels the hurt.
      */
-    public static boolean shouldCancelVanillaDamage(LivingEntity target, DamageSource source) {
+    public static boolean interceptVanillaDamage(LivingEntity target, DamageSource source) {
         if (!active() || RollService.isDrivenDamage(target)) {
             return false;
         }
@@ -460,11 +483,16 @@ public final class ActionEconomy {
             return false;
         }
         long now = level.getGameTime();
-        return EncounterManager.encounterContaining(level, attacker.getUUID())
-                .map(encounter -> encounter.contains(target.getUUID())
-                        && encounter.joinedBefore(attacker.getUUID(), now)
-                        && encounter.joinedBefore(target.getUUID(), now))
-                .orElse(false);
+        Encounter encounter =
+                EncounterManager.encounterContaining(level, attacker.getUUID()).orElse(null);
+        if (encounter == null
+                || !encounter.contains(target.getUUID())
+                || !encounter.joinedBefore(attacker.getUUID(), now)
+                || !encounter.joinedBefore(target.getUUID(), now)) {
+            return false;
+        }
+        RangedAttacks.land(level, encounter, attacker, target, source);
+        return true;
     }
 
     /** Lets the freeze hold the acting mob in place once its movement budget is gone. */

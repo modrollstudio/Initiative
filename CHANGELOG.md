@@ -2,6 +2,21 @@
 
 ## [0.2.0] - Unreleased
 
+- **Bows, crossbows and tridents work in a fight.** An arrow between two participants used to be
+  canceled, so a ranged weapon did nothing in an encounter. Firing a bow or crossbow, or throwing a
+  trident, on your turn is now an attack that uses your action, and each participant the projectile
+  reaches gets a Critfall attack roll against its AC, with Critfall damage on a hit. A miss flies on
+  past the target, a mob's as well as yours. An arrow a mob loosed just before it joined the fight
+  isn't rolled, and flies past you too instead of bouncing off. A hit still does what an arrow does: a Flame or burning arrow sets the target on
+  fire, and Punch, tipped and spectral arrows work as usual. A Multishot crossbow's arrows each roll
+  on their own, for one action. Drawing and firing wait for your turn; loading a crossbow off turn
+  still works. A shot has disadvantage when a hostile participant is within melee reach of you, or
+  when the target is beyond normal range, and beyond long range there is no shot. Cover counts as it
+  does for a melee attack. Skeletons, strays, pillagers and drowned with a trident shoot once on
+  their own turn the same way. New `actions.ranged_attacks` (default on),
+  `actions.ranged_normal_range_blocks` (default 24) and `actions.ranged_long_range_blocks` (default
+  64). Requires Critfall 0.2.16 or newer.
+
 - **Ender pearls no longer carry you out of a fight.** A participant could throw a pearl and land
   outside the encounter, leaving it before the movement budget could stop them. Every teleport in an
   encounter (ender pearl, chorus fruit, `/tp`, another mod's) now counts as movement on your own

@@ -27,6 +27,7 @@
       "studio.modroll.initiative.fabric.gametest.ProvocationGameTests",
       "studio.modroll.initiative.fabric.gametest.ConcealmentGameTests",
       "studio.modroll.initiative.fabric.gametest.RangedGameTests",
+      "studio.modroll.initiative.fabric.gametest.RangedAttackGameTests",
       "studio.modroll.initiative.fabric.gametest.ChecksGameTests",
       "studio.modroll.initiative.fabric.gametest.TeleportGameTests",
       "studio.modroll.initiative.fabric.gametest.MovementGameTests"

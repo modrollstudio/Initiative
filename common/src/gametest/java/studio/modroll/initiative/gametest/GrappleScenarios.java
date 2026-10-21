@@ -41,7 +41,7 @@ public final class GrappleScenarios {
     private static final TurnConfig TURNS = new TurnConfig(true, 1000, 1000, 20.0, 12, false, false, false, Set.of());
     private static final ActionConfig ACTIONS = new ActionConfig(
             true, 6.0, true, true, true, 4.0, false, true, true, true, true, true, true, false, 3.0, 0, 0, true, true,
-            3.0, 1.0, 0, 0, true, 8.0, true, 1.0, 0, 0);
+            3.0, 1.0, 0, 0, true, 8.0, true, 1.0, 0, 0, true, 24.0, 64.0);
     private static final GrappleConfig GRAPPLE = new GrappleConfig(true, 3.0, 0, 0, 5.0, true, 0, 0);
     private static final GrappleConfig GRAPPLE_OFF = new GrappleConfig(false, 3.0, 0, 0, 5.0, true, 0, 0);
 

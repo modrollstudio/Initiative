@@ -80,6 +80,42 @@ same reach rule Shove and the opportunity attack use, config-driven for the same
 balance number, so it lives in config rather than in code, and a pack that wants spear-length arms
 raises it.
 
+## Ranged attacks
+
+On your turn, firing a bow or crossbow, or throwing a trident, is an attack: it spends your
+**action**, the same one a swing spends (`single_attack_per_turn` off makes it free, as it does a
+swing). The arrow then flies for real. Each participant it reaches gets Critfall's attack roll
+against its AC — `RollService.performAttack` with a projectile `AttackContext` (thrown for a
+trident), the launcher as the weapon — in place of the vanilla hit, and on a hit Critfall's damage.
+A miss flies on past the target, through Critfall 0.2.16's own missed-shot handling, and may still
+reach someone farther along. A Multishot crossbow loads three arrows for one action, and each arrow
+that reaches a participant rolls on its own. An arrow fired at anything outside the fight is
+untouched, as a swing at it would be.
+
+- **Your turn only.** Drawing a bow or trident, and firing a loaded crossbow, are refused off your
+  turn and once your action is spent. Loading a crossbow is not a shot and works any time. A draw
+  still held when your turn passes is lowered, so it can't be released late.
+- **Ranged attack in melee.** If a hostile participant that can see you stands within
+  `attack_reach_blocks` of you as you fire, the shot rolls with **disadvantage** (5e).
+- **Range.** Measured from where you stood when you fired to where the target stands when the arrow
+  arrives, in a straight line. Past `ranged_normal_range_blocks` (default 24) the shot rolls with
+  **disadvantage**; past `ranged_long_range_blocks` (default 64) there is no attack at all — no
+  roll, no damage, an "Out of range" line, and the arrow flies on. A trident uses the same ranges.
+- **Cover** applies as it does to a swing, traced from your eye where you fired to the target. An
+  arrow lobbed over a wall that hides the target completely still reached it, so it rolls against
+  three-quarters cover rather than being refused.
+- **Advantage and disadvantage** stack with the usual sources: Help and your own hiding give
+  advantage and are spent by firing; a Dodging or hidden target imposes disadvantage. They cancel
+  to a normal roll the 5e way.
+
+A hit still does what an arrow does after it lands: Punch knockback, a tipped arrow's effect, a
+spectral arrow's glow, five seconds of fire from a burning arrow (Flame, or one shot through lava)
+and the bow's enchantment effects. The arrow then stays in the target, unless it pierces. A miss
+sets nothing alight. The fire burns in real time, like any other fire, and is never rolled.
+
+Mobs shoot the same way on their [turn](#mob-turns). Toggled by `ranged_attacks` (default on); off,
+an arrow between participants is canceled with no roll, as it was before.
+
 ## Standard actions
 
 Four more standard actions run on your turn, each consuming the one action and each individually
@@ -398,6 +434,12 @@ movement clamp — and freezes in place once its budget is gone — and attacks 
 enemy participant through the API as soon as it is within melee reach. Its action is consumed
 regardless of `single_attack_per_turn` (that flag is player-facing). Full mob tactics come later.
 
+A mob that shoots — a skeleton, stray, pillager or drowned with a bow, crossbow or trident in hand —
+fires one [ranged attack](#ranged-attacks) instead, as soon as its target is within long range and
+in sight. It fires through its own attack, so a stray's arrow still slows and a pillager loads its
+crossbow first, but aimed straight at the target, since the roll decides whether it hits. Any arrow
+its own AI looses after that is refused: the action is spent.
+
 ## Turn end
 
 A turn ends when any of these fires:
@@ -423,8 +465,10 @@ Two deliberate edges:
 - Membership is read **as of the previous tick**, so the encounter-forming hit (which joins both
   sides mid-hurt, in loader-order-dependent listeners) always lands as plain vanilla damage on
   both loaders.
-- Ranged **attack actions** are deferred (M4+): a bow shot between participants is simply
-  canceled damage in M3, not an action.
+- A [ranged attack](#ranged-attacks)'s arrow is canceled the same way, and its roll is driven in
+  its place. An arrow loosed before the fight — a mob shoots in real time until it joins, so its last
+  arrow is often still in the air — is canceled with no roll and flies on past like a miss, rather
+  than bouncing back toward its shooter. With `ranged_attacks` off an arrow is only canceled.
 
 ## Advantage and disadvantage
 
@@ -463,7 +507,10 @@ result's `RollDetail`. Initiative emits no hint line of its own.
   "fishing_rod_reel": true,
   "reel_pull_strength": 1.0,
   "reel_attacker_bonus": 0,
-  "reel_defender_bonus": 0
+  "reel_defender_bonus": 0,
+  "ranged_attacks": true,
+  "ranged_normal_range_blocks": 24.0,
+  "ranged_long_range_blocks": 64.0
 }
 ```
 
@@ -497,6 +544,9 @@ result's `RollDetail`. Initiative emits no hint line of its own.
 | `reel_pull_strength` | number ≥ 0 | Vanilla knockback impulse pulling the target toward you on a won reel (default 1.0). |
 | `reel_attacker_bonus` | integer | Flat bonus on your Reel contest roll. Placeholder (default 0). |
 | `reel_defender_bonus` | integer | Flat bonus on the target's Reel contest roll. Placeholder (default 0). |
+| `ranged_attacks` | boolean | A bow, crossbow or trident shot is an attack on your turn, rolled by Critfall where it lands (see [ranged attacks](#ranged-attacks)). Off = arrows between participants are canceled with no roll. |
+| `ranged_normal_range_blocks` | number ≥ 0 | Past this a shot rolls with disadvantage (default 24). |
+| `ranged_long_range_blocks` | number ≥ `ranged_normal_range_blocks` | Past this there is no shot (default 64). Below the normal range, both revert to their defaults. |
 
 The unarmed Grapple and Escape read the separate [`grapple` config group](config.md#grapple).
 

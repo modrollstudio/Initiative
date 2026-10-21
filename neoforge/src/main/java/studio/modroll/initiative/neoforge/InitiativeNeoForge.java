@@ -16,6 +16,7 @@ import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.AddReloadListenerEvent;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.living.LivingChangeTargetEvent;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.entity.player.AttackEntityEvent;
@@ -33,6 +34,7 @@ import studio.modroll.initiative.action.ActionEconomy;
 import studio.modroll.initiative.action.ActionSettingsLoader;
 import studio.modroll.initiative.action.BlockPlacement;
 import studio.modroll.initiative.action.Concealment;
+import studio.modroll.initiative.action.RangedAttacks;
 import studio.modroll.initiative.checks.ChecksIntegration;
 import studio.modroll.initiative.command.InitiativeCommands;
 import studio.modroll.initiative.encounter.EncounterManager;
@@ -56,8 +58,8 @@ import studio.modroll.initiative.ui.ActionUiSync;
 /**
  * The NeoForge server-side wiring: every listener here translates one NeoForge event into a call on
  * the loader-agnostic code in {@code common} and does nothing else. Where NeoForge has no event —
- * the mob AI step, the overlay message, every player teleport — a mixin in {@code neoforge.mixin}
- * stands in and says why.
+ * the mob AI step, the overlay message, every player teleport, the rest of an arrow's hit — a mixin
+ * in {@code neoforge.mixin} stands in and says why.
  */
 @Mod(Initiative.MOD_ID)
 public final class InitiativeNeoForge {
@@ -74,6 +76,7 @@ public final class InitiativeNeoForge {
         NeoForge.EVENT_BUS.addListener(InitiativeNeoForge::onServerStopping);
         NeoForge.EVENT_BUS.addListener(InitiativeNeoForge::onAttackEntity);
         NeoForge.EVENT_BUS.addListener(InitiativeNeoForge::onIncomingDamage);
+        NeoForge.EVENT_BUS.addListener(InitiativeNeoForge::onEntityJoinLevel);
         NeoForge.EVENT_BUS.addListener(InitiativeNeoForge::onChangeTarget);
         NeoForge.EVENT_BUS.addListener(InitiativeNeoForge::onPlayerLoggedOut);
         NeoForge.EVENT_BUS.addListener(InitiativeNeoForge::onBlockPlace);
@@ -175,7 +178,16 @@ public final class InitiativeNeoForge {
     }
 
     private static void onIncomingDamage(LivingIncomingDamageEvent event) {
-        if (ActionEconomy.shouldCancelVanillaDamage(event.getEntity(), event.getSource())) {
+        if (ActionEconomy.interceptVanillaDamage(event.getEntity(), event.getSource())) {
+            event.setCanceled(true);
+        }
+    }
+
+    /** A projectile entering the world: a participant's shot, which the turn and the action gate. */
+    private static void onEntityJoinLevel(EntityJoinLevelEvent event) {
+        if (!event.loadedFromDisk()
+                && event.getLevel() instanceof ServerLevel level
+                && !RangedAttacks.admits(level, event.getEntity())) {
             event.setCanceled(true);
         }
     }
@@ -242,7 +254,10 @@ public final class InitiativeNeoForge {
         }
     }
 
-    /** Using an item off turn, which unlike the other reaches may load a crossbow. */
+    /**
+     * Using an item off turn, which unlike the other reaches may load a crossbow; and drawing or
+     * firing a ranged weapon, which waits for your turn and needs your action.
+     */
     private static void onUseItem(PlayerInteractEvent.RightClickItem event) {
         if (!(event.getLevel() instanceof ServerLevel level)) {
             return;
@@ -250,6 +265,12 @@ public final class InitiativeNeoForge {
         if (OffTurnRestriction.preventsItemUse(level, event.getEntity(), event.getItemStack())) {
             event.setCanceled(true);
             OffTurnRestriction.refuseItemUse(event.getEntity());
+            return;
+        }
+        ActionEconomy.AttackStatus refused = RangedAttacks.refusesUse(level, event.getEntity(), event.getItemStack());
+        if (refused != null) {
+            event.setCanceled(true);
+            RangedAttacks.refuseUse(event.getEntity(), refused);
         }
     }
 

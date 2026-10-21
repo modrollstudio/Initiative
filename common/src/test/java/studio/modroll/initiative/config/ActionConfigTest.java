@@ -42,7 +42,10 @@ class ActionConfigTest {
                     "fishing_rod_reel": true,
                     "reel_pull_strength": 1.0,
                     "reel_attacker_bonus": 0,
-                    "reel_defender_bonus": 0
+                    "reel_defender_bonus": 0,
+                    "ranged_attacks": false,
+                    "ranged_normal_range_blocks": 16.0,
+                    "ranged_long_range_blocks": 48.0
                 }}""".formatted(movementBudget);
     }
 
@@ -131,6 +134,39 @@ class ActionConfigTest {
         assertEquals(6.0, config.movementBudgetBlocks());
         assertReported(source, ConfigIssue.Kind.MISSING, "actions.movement_scales_with_speed");
         assertReported(source, ConfigIssue.Kind.MISSING, "actions.teleports_cost_movement");
+    }
+
+    @Test
+    void parsesTheRangedFields() {
+        ActionConfig config = ActionConfig.fromJson(source(complete("6.0")));
+        assertFalse(config.rangedAttacks());
+        assertEquals(16.0, config.rangedNormalRangeBlocks());
+        assertEquals(48.0, config.rangedLongRangeBlocks());
+    }
+
+    /** A config written before ranged attacks were rolled gets them on, at 24 and 64 blocks. */
+    @Test
+    void missingRangedFieldsDefaultToOnAtTheBuiltInRanges() {
+        ConfigSource source = source(complete("6.0").replaceAll(",\\s*\"ranged_[a-z_]+\": [0-9.a-z]+", ""));
+        ActionConfig config = ActionConfig.fromJson(source);
+        assertTrue(config.rangedAttacks());
+        assertEquals(24.0, config.rangedNormalRangeBlocks());
+        assertEquals(64.0, config.rangedLongRangeBlocks());
+        assertReported(source, ConfigIssue.Kind.MISSING, "actions.ranged_attacks");
+        assertReported(source, ConfigIssue.Kind.MISSING, "actions.ranged_long_range_blocks");
+    }
+
+    /** Only the built-in pair is known to agree, so a long range below the normal one reverts both. */
+    @Test
+    void aLongRangeBelowTheNormalRangeRevertsBoth() {
+        ConfigSource source = source(
+                complete("6.0").replace("\"ranged_long_range_blocks\": 48.0", "\"ranged_long_range_blocks\": 8.0"));
+        ActionConfig config = ActionConfig.fromJson(source);
+        assertEquals(24.0, config.rangedNormalRangeBlocks());
+        assertEquals(64.0, config.rangedLongRangeBlocks());
+        assertFalse(config.rangedAttacks());
+        assertReported(source, ConfigIssue.Kind.INVALID, "actions.ranged_normal_range_blocks");
+        assertReported(source, ConfigIssue.Kind.INVALID, "actions.ranged_long_range_blocks");
     }
 
     @Test

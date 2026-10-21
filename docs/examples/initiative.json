@@ -52,7 +52,10 @@
     "fishing_rod_reel": true,
     "reel_pull_strength": 1.0,
     "reel_attacker_bonus": 0,
-    "reel_defender_bonus": 0
+    "reel_defender_bonus": 0,
+    "ranged_attacks": true,
+    "ranged_normal_range_blocks": 24.0,
+    "ranged_long_range_blocks": 64.0
   },
   "cover": {
     "enabled": true,

@@ -16,6 +16,7 @@ import net.minecraft.world.item.CrossbowItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
 import studio.modroll.initiative.Initiative;
+import studio.modroll.initiative.action.RangedAttacks;
 import studio.modroll.initiative.action.Teleports;
 import studio.modroll.initiative.config.InitiativeConfig;
 import studio.modroll.initiative.config.TurnConfig;
@@ -140,6 +141,7 @@ public final class OffTurnRestriction {
         Vec3 current = player.position();
         Vec3 anchor = ANCHORS.computeIfAbsent(id, key -> current);
         root(player);
+        RangedAttacks.lowerDrawnWeapon(player);
         Vec3 held = heldPosition(anchor, current, standsInFluid(player));
         ANCHORS.replace(id, held);
         if (!held.equals(current)) {

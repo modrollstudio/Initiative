@@ -19,6 +19,7 @@
   "initiative.command.hide.done": "You slip out of sight",
   "initiative.command.hide.seen": "You fail to hide",
   "initiative.action.out_of_reach": "Out of reach",
+  "initiative.action.out_of_range": "Out of range",
   "initiative.action.missing_item": "Missing item",
   "initiative.action.total_cover": "No line of sight",
   "initiative.action.no_movement_to_build": "No movement left",

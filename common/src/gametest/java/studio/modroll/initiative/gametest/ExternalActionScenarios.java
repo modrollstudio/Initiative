@@ -45,7 +45,7 @@ public final class ExternalActionScenarios {
     private static final TurnConfig TURNS = new TurnConfig(true, 1000, 1000, 20.0, 12, false, false, false, Set.of());
     private static final ActionConfig ACTIONS = new ActionConfig(
             true, 6.0, true, true, true, 4.0, false, true, true, true, true, true, true, true, 3.0, 0, 0, true, true,
-            3.0, 1.0, 0, 0, true, 8.0, true, 1.0, 0, 0);
+            3.0, 1.0, 0, 0, true, 8.0, true, 1.0, 0, 0, true, 24.0, 64.0);
     private static final RollAnimationConfig ANIMATION_ON = new RollAnimationConfig(true, 10, 10, 2, true, true);
 
     private static final List<Integer> PLAYER_FIRST = List.of(20, 1);

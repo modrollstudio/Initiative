@@ -50,7 +50,7 @@ public final class OffTurnScenarios {
      */
     private static final ActionConfig ACTIONS = new ActionConfig(
             true, 100.0, true, true, true, 4.0, false, true, true, true, true, true, true, true, 3.0, 0, 0, true, true,
-            3.0, 1.0, 0, 0, true, 8.0, true, 1.0, 0, 0);
+            3.0, 1.0, 0, 0, true, 8.0, true, 1.0, 0, 0, true, 24.0, 64.0);
 
     private static final CoverConfig PLACEMENT_COSTS_MOVEMENT =
             new CoverConfig(false, 2, 5, 0.5, 0.75, true, true, 1.0);

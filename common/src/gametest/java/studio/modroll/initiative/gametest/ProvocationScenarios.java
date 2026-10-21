@@ -43,7 +43,7 @@ public final class ProvocationScenarios {
             new TurnConfig(true, 1000, 1000, 20.0, 12, true, false, false, Set.of());
     private static final ActionConfig ACTIONS = new ActionConfig(
             true, 6.0, true, true, true, 4.0, true, true, true, true, true, true, true, true, 3.0, 10, 0, true, true,
-            3.0, 1.0, 0, 0, true, 8.0, true, 1.0, 0, 0);
+            3.0, 1.0, 0, 0, true, 8.0, true, 1.0, 0, 0, true, 24.0, 64.0);
 
     /** Drawn in join order (player, then the mob), so (20, 1) puts the player's turn first. */
     private static final List<Integer> PLAYER_FIRST = List.of(20, 1);

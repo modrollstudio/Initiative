@@ -82,7 +82,10 @@ Example (see [examples/initiative.json](examples/initiative.json)):
     "fishing_rod_reel": true,
     "reel_pull_strength": 1.0,
     "reel_attacker_bonus": 0,
-    "reel_defender_bonus": 0
+    "reel_defender_bonus": 0,
+    "ranged_attacks": true,
+    "ranged_normal_range_blocks": 24.0,
+    "ranged_long_range_blocks": 64.0
   },
   "cover": {
     "enabled": true,
@@ -196,6 +199,9 @@ See [actions](actions.md) for the mechanics.
 | `reel_pull_strength` | number ≥ 0 | Vanilla knockback impulse pulling the target toward you on a won reel (default 1.0). |
 | `reel_attacker_bonus` | integer | Flat bonus on your Reel contest roll (default 0). Placeholder. |
 | `reel_defender_bonus` | integer | Flat bonus on the target's Reel contest roll (default 0). Placeholder. |
+| `ranged_attacks` | boolean | Firing a bow or crossbow, or throwing a trident, is an attack on your turn that spends your action, and each participant the projectile reaches gets Critfall's attack roll. Mobs with ranged weapons shoot once on their turn. Off = arrows between participants are canceled with no roll. See [ranged attacks](actions.md#ranged-attacks). |
+| `ranged_normal_range_blocks` | number ≥ 0 | A shot at a target farther than this from where you fired rolls with disadvantage (default 24). |
+| `ranged_long_range_blocks` | number ≥ `ranged_normal_range_blocks` | A target farther than this is out of range: no roll and no damage (default 64). Below the normal range, both revert to their defaults. |
 
 ## `cover`
 
