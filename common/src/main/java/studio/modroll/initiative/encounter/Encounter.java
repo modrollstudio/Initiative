@@ -144,27 +144,6 @@ public final class Encounter {
         shots.keySet().removeIf(projectileGone);
     }
 
-    /** Ties a projectile in flight to the ranged attack it belongs to. */
-    public void recordShot(UUID projectile, RangedShot shot) {
-        shots.put(projectile, shot);
-    }
-
-    /** The ranged attack this projectile was fired as, or null when it was fired as none. */
-    public RangedShot shot(UUID projectile) {
-        return shots.get(projectile);
-    }
-
-    /** The attack this shooter fired on this tick, which a second arrow of the same volley belongs to. */
-    public Optional<RangedShot> volley(UUID shooter, long gameTime) {
-        return shots.values().stream()
-                .filter(shot -> shot.shooter().equals(shooter) && shot.firedAt() == gameTime)
-                .findFirst();
-    }
-
-    public void forgetShots(Predicate<UUID> projectileGone) {
-        shots.keySet().removeIf(projectileGone);
-    }
-
     /**
      * Whether the participant joined on an earlier tick. The encounter-forming hit joins its
      * attacker and victim mid-hurt, in a listener whose order against other mods' damage listeners
