@@ -1,22 +1,28 @@
 # Changelog
 
-## [0.2.0] - Unreleased
+## [0.2.1] - 2026-10-28
 
-- **An attack from outside a fight joins it at once and is that attacker's turn.** A mob or player
-  that attacked a participant from past the leave radius was dropped from the fight on the tick its
-  hit joined it, so its next hit landed in real time and joined it again. Anyone who attacks their
-  way in, melee or ranged, now stays in while they are still fighting, and that first attack counts
-  as their turn for the round: if their place in the order comes later that round, it is skipped,
-  with a line telling the table they already acted. From the next round they act as usual. The
-  attack itself is now rolled like any turn attack (attack roll against AC, Critfall's damage dice,
-  the dice shown), where it used to land as plain damage, so it can miss.
-  `encounters.hold_ranged_attackers` now covers every attacker that fought its way in, not only
-  shooters.
+- **Mobs and players who attack a fight from outside now join on their first hit.** That hit is
+  rolled like a normal attack (attack roll against AC, Critfall's damage dice, the dice shown), so
+  it can miss, and it counts as their turn for the round. Before, it landed as plain damage, and
+  the attacker could land more hits in real time before its turn came. If the attacker's place in
+  the order comes later that round, that turn is skipped, with an "already acted this round" line
+  for the players in the fight. From the next round they act as usual. This covers melee and
+  ranged attacks, from mobs and players alike.
 
-- **Changing dimension leaves the fight at once.** A player who left a fight by changing dimension
-  (`/depths leave`, a portal, `/tp`) kept their turn bar on screen until the next fight. They now
-  leave the encounter immediately, the same way a disconnect does: their turn passes on, the fight
-  ends if they were its last player, and their turn strip and bar clear at once.
+- **Attackers who fought their way in are no longer dropped from the fight for standing too far
+  out.** An attacker past `leave_radius` used to leave the fight on the tick its hit joined it.
+  `encounters.hold_ranged_attackers` now keeps every attacker who fought their way in, not only
+  shooters, for as long as they are still fighting: a mob while it still targets a player in the
+  fight, a player while a hostile in the fight is within `actions.ranged_long_range_blocks`.
+
+- **Changing dimension (portals, commands, dying and respawning) now removes you from the fight
+  and clears the turn bar.** A player who left by changing dimension (`/depths leave`, a portal,
+  `/tp`) kept the turn bar on screen until the next fight. They now leave the fight right away,
+  the same way a disconnect does: their turn passes on, the fight ends if they were its last
+  player, and the turn strip and bar clear at once.
+
+## [0.2.0] - 2026-10-21
 
 - **Bows, crossbows and tridents work in a fight.** An arrow between two participants used to be
   canceled, so a ranged weapon did nothing in an encounter. Firing a bow or crossbow, or throwing a

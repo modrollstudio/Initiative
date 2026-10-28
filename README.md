@@ -17,7 +17,7 @@ Grapple, Escape and Hide roll the participants' skills instead of flat bonuses; 
 ## Install
 
 - Minecraft 1.21.1 with NeoForge 21.1+, or Fabric Loader 0.16.9+ with Fabric API
-- [Critfall](https://github.com/modrollstudio/Critfall) 0.2.6 or newer
+- [Critfall](https://github.com/modrollstudio/Critfall) 0.2.16 or newer
 - The Initiative jar for your loader (`+neoforge` or `+fabric`), on the server and every client
 
 ## Scope
