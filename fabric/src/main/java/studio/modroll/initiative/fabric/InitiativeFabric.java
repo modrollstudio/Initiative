@@ -2,6 +2,7 @@ package studio.modroll.initiative.fabric;
 
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.fabricmc.fabric.api.entity.event.v1.ServerEntityWorldChangeEvents;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
@@ -80,6 +81,8 @@ public final class InitiativeFabric implements ModInitializer {
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> EncounterManager.serverStopping());
         ServerPlayConnectionEvents.DISCONNECT.register((handler, server) ->
                 EncounterManager.playerDisconnected(handler.player.serverLevel(), handler.player.getUUID()));
+        ServerEntityWorldChangeEvents.AFTER_PLAYER_CHANGE_WORLD.register(
+                (player, origin, destination) -> EncounterManager.playerChangedDimension(origin, player.getUUID()));
         AttackEntityCallback.EVENT.register(InitiativeFabric::onAttackEntity);
         PlayerBlockBreakEvents.BEFORE.register((world, player, pos, state, blockEntity) -> !offTurn(world, player));
         AttackBlockCallback.EVENT.register((player, world, hand, pos, direction) -> refuseOffTurn(world, player));

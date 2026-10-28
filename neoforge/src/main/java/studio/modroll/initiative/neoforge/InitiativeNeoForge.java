@@ -79,6 +79,7 @@ public final class InitiativeNeoForge {
         NeoForge.EVENT_BUS.addListener(InitiativeNeoForge::onEntityJoinLevel);
         NeoForge.EVENT_BUS.addListener(InitiativeNeoForge::onChangeTarget);
         NeoForge.EVENT_BUS.addListener(InitiativeNeoForge::onPlayerLoggedOut);
+        NeoForge.EVENT_BUS.addListener(InitiativeNeoForge::onPlayerChangedDimension);
         NeoForge.EVENT_BUS.addListener(InitiativeNeoForge::onBlockPlace);
         NeoForge.EVENT_BUS.addListener(InitiativeNeoForge::onBlockBreak);
         NeoForge.EVENT_BUS.addListener(PlayerInteractEvent.LeftClickBlock.class, InitiativeNeoForge::onInteract);
@@ -215,6 +216,15 @@ public final class InitiativeNeoForge {
     private static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
             EncounterManager.playerDisconnected(player.serverLevel(), player.getUUID());
+        }
+    }
+
+    private static void onPlayerChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            ServerLevel from = player.server.getLevel(event.getFrom());
+            if (from != null) {
+                EncounterManager.playerChangedDimension(from, player.getUUID());
+            }
         }
     }
 

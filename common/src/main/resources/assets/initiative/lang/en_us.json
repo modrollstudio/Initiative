@@ -12,6 +12,7 @@
   "initiative.command.action.done": "Action taken",
   "initiative.command.action.failed": "It comes to nothing",
   "initiative.command.end_turn.done": "Turn ended",
+  "initiative.turn.already_acted": "%s already acted this round",
   "initiative.command.dash.done": "You dash",
   "initiative.command.disengage.done": "You disengage",
   "initiative.command.dodge.done": "You dodge",

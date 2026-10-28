@@ -414,9 +414,10 @@ public final class MultiplayerScenarios {
                         helper.fail("a released mob must be back on Critfall's real-time pipeline");
                     }
                     freed.invulnerableTime = 0;
+                    // Its initiative, then the attack roll its joining hit now is: a natural 2 misses.
                     ScenarioSupport.forceNaturals(
                             helper,
-                            List.of(10),
+                            List.of(10, 2),
                             () -> elsewhere.hurt(
                                     helper.getLevel().damageSources().mobAttack(freed), 1.0f));
                 })

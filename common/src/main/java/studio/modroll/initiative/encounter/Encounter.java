@@ -31,7 +31,8 @@ public final class Encounter {
     private final Vec3 center;
     private final Map<UUID, Side> participants = new LinkedHashMap<>();
     private final Map<UUID, Long> joinedAtGameTime = new LinkedHashMap<>();
-    private final Set<UUID> rangedAggressors = new LinkedHashSet<>();
+    private final Set<UUID> aggressors = new LinkedHashSet<>();
+    private final Set<UUID> openingAttacks = new LinkedHashSet<>();
     private final Map<UUID, RangedShot> shots = new HashMap<>();
     private final TurnOrder turnOrder = new TurnOrder();
     private final TurnBudget budget = new TurnBudget();
@@ -84,20 +85,42 @@ public final class Encounter {
     public void remove(UUID participant) {
         participants.remove(participant);
         joinedAtGameTime.remove(participant);
-        rangedAggressors.remove(participant);
+        aggressors.remove(participant);
+        openingAttacks.remove(participant);
         shots.values().removeIf(shot -> shot.shooter().equals(participant));
         lastActionUiSnapshots.remove(participant);
         turnOrder.remove(participant);
         flags.remove(participant);
     }
 
-    /** Marks a participant that shot its way in from outside the bubble rather than standing in it. */
-    public void markRangedAggressor(UUID participant) {
-        rangedAggressors.add(participant);
+    /**
+     * Marks a participant that attacked its way in — from outside the fight, or by a shot from
+     * outside the bubble — rather than being pulled in for standing in it.
+     */
+    public void markAggressor(UUID participant) {
+        aggressors.add(participant);
     }
 
-    public boolean isRangedAggressor(UUID participant) {
-        return rangedAggressors.contains(participant);
+    public boolean isAggressor(UUID participant) {
+        return aggressors.contains(participant);
+    }
+
+    /**
+     * Notes that this participant has just joined by attacking someone already here, and that the
+     * hit which joined it still has to be rolled as its turn's attack. Only good for the tick it
+     * joined in: the encounter tick forgets whatever was not rolled.
+     */
+    public void markOpeningAttack(UUID participant) {
+        openingAttacks.add(participant);
+    }
+
+    /** Whether this participant's joining hit was waiting to be rolled; asking takes it. */
+    public boolean consumeOpeningAttack(UUID participant) {
+        return openingAttacks.remove(participant);
+    }
+
+    public void forgetOpeningAttacks() {
+        openingAttacks.clear();
     }
 
     /** Ties a projectile in flight to the ranged attack it belongs to. */
