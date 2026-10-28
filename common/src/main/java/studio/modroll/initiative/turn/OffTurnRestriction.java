@@ -12,8 +12,12 @@ import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.CrossbowItem;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
 import studio.modroll.initiative.Initiative;
+import studio.modroll.initiative.action.RangedAttacks;
+import studio.modroll.initiative.action.Teleports;
 import studio.modroll.initiative.config.InitiativeConfig;
 import studio.modroll.initiative.config.TurnConfig;
 import studio.modroll.initiative.encounter.Encounter;
@@ -30,7 +34,7 @@ import studio.modroll.initiative.encounter.EncounterManager;
  */
 public final class OffTurnRestriction {
 
-    private static final ResourceLocation ROOT_ID =
+    public static final ResourceLocation ROOT_ID =
             ResourceLocation.fromNamespaceAndPath(Initiative.MOD_ID, "off_turn_root");
     private static final AttributeModifier ROOT =
             new AttributeModifier(ROOT_ID, -1.0, AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL);
@@ -43,6 +47,24 @@ public final class OffTurnRestriction {
     public static void sendRefusal(Player player) {
         player.displayClientMessage(
                 Component.translatable("initiative.action.not_your_turn").withStyle(ChatFormatting.RED), true);
+    }
+
+    /**
+     * The use hooks' question, which differs from {@link #preventsInteraction} in one place: loading
+     * a crossbow is readying it, not acting, so it may happen off turn. Firing it still waits.
+     */
+    public static boolean preventsItemUse(ServerLevel level, Player player, ItemStack stack) {
+        return !loadsACrossbow(stack) && preventsInteraction(level, player);
+    }
+
+    /**
+     * Refuses a use on the server and tells the player why. The client acted on the use before the
+     * server refused it — it fires a loaded crossbow at once and counts it empty — so the inventory
+     * is resent, putting back what the client wrongly believes it spent.
+     */
+    public static void refuseItemUse(Player player) {
+        sendRefusal(player);
+        player.inventoryMenu.sendAllDataToRemote();
     }
 
     /** The question every loader's break, place, use and interact hook asks before it cancels. */
@@ -119,10 +141,11 @@ public final class OffTurnRestriction {
         Vec3 current = player.position();
         Vec3 anchor = ANCHORS.computeIfAbsent(id, key -> current);
         root(player);
+        RangedAttacks.lowerDrawnWeapon(player);
         Vec3 held = heldPosition(anchor, current, standsInFluid(player));
         ANCHORS.replace(id, held);
         if (!held.equals(current)) {
-            player.teleportTo(held.x, held.y, held.z);
+            Teleports.moveAsInitiative(player, held);
         }
     }
 
@@ -158,6 +181,10 @@ public final class OffTurnRestriction {
         if (speed != null) {
             speed.removeModifier(ROOT_ID);
         }
+    }
+
+    private static boolean loadsACrossbow(ItemStack stack) {
+        return stack.getItem() instanceof CrossbowItem && !CrossbowItem.isCharged(stack);
     }
 
     private static boolean isActing(Encounter encounter, UUID participant) {

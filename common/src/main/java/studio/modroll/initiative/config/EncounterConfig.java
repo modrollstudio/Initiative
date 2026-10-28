@@ -12,6 +12,7 @@ public record EncounterConfig(
         boolean holdRangedAttackers,
         boolean pullNearbyPlayers,
         boolean requireLineOfSight,
+        boolean endWhenAllHidden,
         double triggerRadius,
         double leaveRadius) {
 
@@ -32,6 +33,7 @@ public record EncounterConfig(
                 encounters.read("hold_ranged_attackers", BOOLEAN),
                 encounters.read("pull_nearby_players", BOOLEAN),
                 encounters.read("require_line_of_sight", BOOLEAN),
+                encounters.read("end_when_all_hidden", BOOLEAN),
                 triggerRadius,
                 leaveRadius);
     }

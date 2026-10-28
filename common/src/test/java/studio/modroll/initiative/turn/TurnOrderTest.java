@@ -175,4 +175,70 @@ class TurnOrderTest {
         assertEquals(B, order.currentTurn().orElseThrow());
         assertEquals(2, order.secondsRemaining(40));
     }
+
+    /**
+     * An attack from outside is the attacker's turn for this round: a slot still ahead of the
+     * acting participant is passed over once, and the round after it acts as usual.
+     */
+    @Test
+    void aJoinerWhoAlreadyActedIsSkippedLaterThisRound() {
+        TurnOrder order = orderOf(new InitiativeEntry(A, 20, 0), new InitiativeEntry(B, 5, 0));
+        order.tick(100);
+        order.insertHavingActed(new InitiativeEntry(C, 10, 0));
+        assertEquals(List.of(A, C, B), participants(order));
+        assertEquals(A, order.currentTurn().orElseThrow());
+        assertEquals(List.of(), order.drainSkippedTurns());
+        order.endTurn();
+        assertEquals(B, order.currentTurn().orElseThrow());
+        assertEquals(List.of(C), order.drainSkippedTurns());
+        assertEquals(List.of(), order.drainSkippedTurns());
+        order.endTurn();
+        assertEquals(A, order.currentTurn().orElseThrow());
+        assertEquals(2, order.round());
+        order.endTurn();
+        assertEquals(C, order.currentTurn().orElseThrow());
+        assertEquals(List.of(), order.drainSkippedTurns());
+    }
+
+    /** A joiner whose slot this round has already passed simply acts next round; nothing is skipped. */
+    @Test
+    void aJoinerWhoseSlotHasPassedActsNextRound() {
+        TurnOrder order = orderOf(new InitiativeEntry(A, 20, 0), new InitiativeEntry(B, 5, 0));
+        order.endTurn();
+        order.insertHavingActed(new InitiativeEntry(C, 10, 0));
+        assertEquals(B, order.currentTurn().orElseThrow());
+        order.endTurn();
+        assertEquals(A, order.currentTurn().orElseThrow());
+        order.endTurn();
+        assertEquals(C, order.currentTurn().orElseThrow());
+        assertEquals(2, order.round());
+        assertEquals(List.of(), order.drainSkippedTurns());
+    }
+
+    /** Removing the acting participant lands on the joiner's slot: it is skipped there too. */
+    @Test
+    void removingTheActorOntoAJoinerWhoActedSkipsIt() {
+        TurnOrder order = orderOf(new InitiativeEntry(A, 20, 0), new InitiativeEntry(B, 5, 0));
+        order.tick(100);
+        order.insertHavingActed(new InitiativeEntry(C, 10, 0));
+        order.remove(A);
+        assertEquals(B, order.currentTurn().orElseThrow());
+        assertEquals(List.of(C), order.drainSkippedTurns());
+    }
+
+    /** Last in the order, the joiner's skip wraps the round, and its next turn is its own. */
+    @Test
+    void aSkipAtTheEndOfTheOrderWrapsIntoTheNextRound() {
+        TurnOrder order = orderOf(new InitiativeEntry(A, 20, 0), new InitiativeEntry(B, 10, 0));
+        order.tick(100);
+        order.insertHavingActed(new InitiativeEntry(C, 1, 0));
+        order.endTurn();
+        order.endTurn();
+        assertEquals(A, order.currentTurn().orElseThrow());
+        assertEquals(2, order.round());
+        assertEquals(List.of(C), order.drainSkippedTurns());
+        order.endTurn();
+        order.endTurn();
+        assertEquals(C, order.currentTurn().orElseThrow());
+    }
 }

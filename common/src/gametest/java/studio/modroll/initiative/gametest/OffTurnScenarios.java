@@ -5,11 +5,18 @@ import java.util.Set;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.monster.Husk;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.projectile.AbstractArrow;
+import net.minecraft.world.item.CrossbowItem;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import studio.modroll.initiative.action.BlockPlacement;
 import studio.modroll.initiative.config.ActionConfig;
@@ -31,7 +38,7 @@ import studio.modroll.initiative.turn.TurnOrder;
 public final class OffTurnScenarios {
 
     private static final EncounterConfig TIGHT_BUBBLE =
-            new EncounterConfig(true, true, true, false, true, true, true, 1.0, 8.0);
+            new EncounterConfig(true, true, true, false, true, true, true, true, 1.0, 8.0);
     private static final TurnConfig RESTRICT_ON =
             new TurnConfig(true, 1000, 1000, 20.0, 12, false, false, true, Set.of());
     private static final TurnConfig RESTRICT_OFF =
@@ -42,8 +49,8 @@ public final class OffTurnScenarios {
      * the hold under test.
      */
     private static final ActionConfig ACTIONS = new ActionConfig(
-            true, 100.0, true, 4.0, false, true, true, true, true, true, true, true, 3.0, 0, 0, true, true, 3.0, 1.0, 0,
-            0, true, 8.0, true, 1.0, 0, 0);
+            true, 100.0, true, true, true, 4.0, false, true, true, true, true, true, true, true, 3.0, 0, 0, true, true,
+            3.0, 1.0, 0, 0, true, 8.0, true, 1.0, 0, 0, true, 24.0, 64.0);
 
     private static final CoverConfig PLACEMENT_COSTS_MOVEMENT =
             new CoverConfig(false, 2, 5, 0.5, 0.75, true, true, 1.0);
@@ -176,6 +183,61 @@ public final class OffTurnScenarios {
                     requireInteraction(helper, player, false, "a participant player off its turn");
                     requireInteraction(helper, bystander, true, "a player who is in no encounter");
                     cleanUp(player, bystander, husk);
+                })
+                .thenSucceed();
+    }
+
+    /**
+     * The playtest bug: the off-turn refusal turned the load away on the server while the client,
+     * which acts on a use before the server answers, showed the crossbow loaded — and on the player's
+     * own turn the click that should have fired started a load nobody finished. Loading is readying,
+     * so it now goes through off turn; firing still waits. A mock server player, because only a real
+     * use reaches the loaders' hooks. Holding the draw to full charge is played as one release with
+     * no time left, which is what a full-length hold amounts to.
+     */
+    public static void aCrossbowLoadedOffTurnFiresOnYourTurn(GameTestHelper helper) {
+        prepare(helper, RESTRICT_ON);
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        Vec3 spawn = helper.absoluteVec(new Vec3(1, 1, 1));
+        player.moveTo(spawn.x, spawn.y, spawn.z, 0, 0);
+        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Items.CROSSBOW));
+        player.getInventory().add(new ItemStack(Items.ARROW, 4));
+        Husk husk = ScenarioSupport.spawnHusk(helper, 4, 4);
+        ScenarioSupport.formEncounter(helper, player, List.of(20, 1), husk);
+        helper.startSequence()
+                .thenExecuteAfter(2, () -> passTurnToTheHusk(helper, player, husk))
+                .thenExecuteAfter(2, () -> {
+                    ItemStack crossbow = player.getMainHandItem();
+                    useMainHand(helper, player);
+                    if (!player.isUsingItem()) {
+                        helper.fail("loading a crossbow off turn must be allowed to start");
+                    }
+                    crossbow.releaseUsing(helper.getLevel(), player, 0);
+                    player.stopUsingItem();
+                    if (!CrossbowItem.isCharged(crossbow)) {
+                        helper.fail("the crossbow must be loaded once the draw is held to full charge");
+                    }
+                    useMainHand(helper, player);
+                    if (!CrossbowItem.isCharged(crossbow)) {
+                        helper.fail("firing must still wait for the player's own turn");
+                    }
+                    turnOrder(helper, player).endTurn();
+                })
+                .thenExecuteAfter(2, () -> {
+                    requireCurrent(helper, player, player);
+                    ItemStack crossbow = player.getMainHandItem();
+                    useMainHand(helper, player);
+                    if (CrossbowItem.isCharged(crossbow)) {
+                        helper.fail("a crossbow loaded off turn must fire on the player's own turn");
+                    }
+                    AABB around = player.getBoundingBox().inflate(4.0);
+                    if (helper.getLevel()
+                            .getEntitiesOfClass(AbstractArrow.class, around)
+                            .isEmpty()) {
+                        helper.fail("firing must loose the bolt the crossbow was loaded with");
+                    }
+                    helper.getLevel().getServer().getPlayerList().remove(player);
+                    cleanUp(husk);
                 })
                 .thenSucceed();
     }
@@ -358,6 +420,10 @@ public final class OffTurnScenarios {
         requireCurrent(helper, player, player);
         turnOrder(helper, player).endTurn();
         requireCurrent(helper, player, husk);
+    }
+
+    private static void useMainHand(GameTestHelper helper, ServerPlayer player) {
+        player.gameMode.useItem(player, helper.getLevel(), player.getMainHandItem(), InteractionHand.MAIN_HAND);
     }
 
     private static TurnOrder turnOrder(GameTestHelper helper, Player player) {

@@ -28,6 +28,7 @@ public final class InitiativeConfig {
     private static volatile HudConfig hud;
     private static volatile ActionUiConfig actionUi;
     private static volatile RollAnimationConfig rollAnimation;
+    private static volatile ChecksConfig checks;
 
     private InitiativeConfig() {}
 
@@ -77,6 +78,10 @@ public final class InitiativeConfig {
         return loaded(rollAnimation);
     }
 
+    public static ChecksConfig checks() {
+        return loaded(checks);
+    }
+
     public static void overrideEncountersForTesting(EncounterConfig config) {
         encounters = config;
     }
@@ -109,6 +114,10 @@ public final class InitiativeConfig {
         rollAnimation = config;
     }
 
+    public static void overrideChecksForTesting(ChecksConfig config) {
+        checks = config;
+    }
+
     private static <T> T loaded(T group) {
         if (group == null) {
             throw new IllegalStateException("Initiative config accessed before load");
@@ -130,6 +139,7 @@ public final class InitiativeConfig {
         hud = HudConfig.fromJson(source);
         actionUi = ActionUiConfig.fromJson(source);
         rollAnimation = RollAnimationConfig.fromJson(source);
+        checks = ChecksConfig.fromJson(source);
         report(source.issues());
     }
 

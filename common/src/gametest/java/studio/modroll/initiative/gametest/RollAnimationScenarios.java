@@ -37,15 +37,15 @@ import studio.modroll.initiative.roll.RollAnimationSync;
 public final class RollAnimationScenarios {
 
     private static final EncounterConfig TIGHT_BUBBLE =
-            new EncounterConfig(true, true, true, false, true, true, true, 1.0, 30.0);
+            new EncounterConfig(true, true, true, false, true, true, true, true, 1.0, 30.0);
     private static final TurnConfig TURNS = new TurnConfig(true, 1000, 1000, 20.0, 12, false, false, false, Set.of());
     private static final ActionConfig ACTIONS = new ActionConfig(
-            true, 6.0, true, 4.0, true, true, true, true, true, true, true, true, 3.0, 0, 0, true, true, 3.0, 1.0, 0, 0,
-            true, 8.0, true, 1.0, 0, 0);
+            true, 6.0, true, true, true, 4.0, true, true, true, true, true, true, true, true, 3.0, 0, 0, true, true,
+            3.0, 1.0, 0, 0, true, 8.0, true, 1.0, 0, 0, true, 24.0, 64.0);
     /** Attacking spends no action, so one turn can drive the animation-on and animation-off attacks. */
     private static final ActionConfig ACTIONS_MULTI = new ActionConfig(
-            true, 6.0, false, 4.0, true, true, true, true, true, true, true, true, 3.0, 0, 0, true, true, 3.0, 1.0, 0,
-            0, true, 8.0, true, 1.0, 0, 0);
+            true, 6.0, true, true, false, 4.0, true, true, true, true, true, true, true, true, 3.0, 0, 0, true, true,
+            3.0, 1.0, 0, 0, true, 8.0, true, 1.0, 0, 0, true, 24.0, 64.0);
 
     private static final RollAnimationConfig ANIMATION_ON = new RollAnimationConfig(true, 10, 10, 2, true, true);
     private static final RollAnimationConfig ANIMATION_OFF = new RollAnimationConfig(false, 10, 10, 2, true, true);
@@ -279,6 +279,7 @@ public final class RollAnimationScenarios {
         InitiativeConfig.overrideEncountersForTesting(TIGHT_BUBBLE);
         InitiativeConfig.overrideTurnsForTesting(TURNS);
         InitiativeConfig.overrideActionsForTesting(actions);
+        InitiativeConfig.overrideChecksForTesting(ScenarioSupport.CHECKS_OFF);
         InitiativeConfig.overrideGrappleForTesting(ScenarioSupport.GRAPPLE_DEFAULT);
         InitiativeConfig.overrideCoverForTesting(ScenarioSupport.COVER_OFF);
         InitiativeConfig.overrideRollAnimationForTesting(animation);

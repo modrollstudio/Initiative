@@ -2,6 +2,7 @@ package studio.modroll.initiative.neoforge;
 
 import net.minecraft.Util;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
@@ -9,11 +10,13 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.bus.api.ICancellableEvent;
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.AddReloadListenerEvent;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.living.LivingChangeTargetEvent;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.entity.player.AttackEntityEvent;
@@ -31,6 +34,8 @@ import studio.modroll.initiative.action.ActionEconomy;
 import studio.modroll.initiative.action.ActionSettingsLoader;
 import studio.modroll.initiative.action.BlockPlacement;
 import studio.modroll.initiative.action.Concealment;
+import studio.modroll.initiative.action.RangedAttacks;
+import studio.modroll.initiative.checks.ChecksIntegration;
 import studio.modroll.initiative.command.InitiativeCommands;
 import studio.modroll.initiative.encounter.EncounterManager;
 import studio.modroll.initiative.encounter.Provocation;
@@ -53,13 +58,15 @@ import studio.modroll.initiative.ui.ActionUiSync;
 /**
  * The NeoForge server-side wiring: every listener here translates one NeoForge event into a call on
  * the loader-agnostic code in {@code common} and does nothing else. Where NeoForge has no event —
- * the mob AI step, the overlay message — a mixin in {@code neoforge.mixin} stands in and says why.
+ * the mob AI step, the overlay message, every player teleport, the rest of an arrow's hit — a mixin
+ * in {@code neoforge.mixin} stands in and says why.
  */
 @Mod(Initiative.MOD_ID)
 public final class InitiativeNeoForge {
 
     public InitiativeNeoForge(IEventBus modBus) {
         Initiative.init(FMLPaths.CONFIGDIR.get());
+        ChecksIntegration.setPresent(ModList.get().isLoaded(ChecksIntegration.MOD_ID));
         TurnOrderSync.setSender(InitiativeNeoForge::sendTurnOrder);
         RollAnimationSync.setSender(InitiativeNeoForge::sendRollAnimation);
         ActionUiSync.setSender(InitiativeNeoForge::sendActionUi);
@@ -69,13 +76,15 @@ public final class InitiativeNeoForge {
         NeoForge.EVENT_BUS.addListener(InitiativeNeoForge::onServerStopping);
         NeoForge.EVENT_BUS.addListener(InitiativeNeoForge::onAttackEntity);
         NeoForge.EVENT_BUS.addListener(InitiativeNeoForge::onIncomingDamage);
+        NeoForge.EVENT_BUS.addListener(InitiativeNeoForge::onEntityJoinLevel);
         NeoForge.EVENT_BUS.addListener(InitiativeNeoForge::onChangeTarget);
         NeoForge.EVENT_BUS.addListener(InitiativeNeoForge::onPlayerLoggedOut);
+        NeoForge.EVENT_BUS.addListener(InitiativeNeoForge::onPlayerChangedDimension);
         NeoForge.EVENT_BUS.addListener(InitiativeNeoForge::onBlockPlace);
         NeoForge.EVENT_BUS.addListener(InitiativeNeoForge::onBlockBreak);
         NeoForge.EVENT_BUS.addListener(PlayerInteractEvent.LeftClickBlock.class, InitiativeNeoForge::onInteract);
         NeoForge.EVENT_BUS.addListener(PlayerInteractEvent.RightClickBlock.class, InitiativeNeoForge::onInteract);
-        NeoForge.EVENT_BUS.addListener(PlayerInteractEvent.RightClickItem.class, InitiativeNeoForge::onInteract);
+        NeoForge.EVENT_BUS.addListener(InitiativeNeoForge::onUseItem);
         NeoForge.EVENT_BUS.addListener(PlayerInteractEvent.EntityInteract.class, InitiativeNeoForge::onInteract);
         NeoForge.EVENT_BUS.addListener(
                 PlayerInteractEvent.EntityInteractSpecific.class, InitiativeNeoForge::onInteract);
@@ -111,20 +120,29 @@ public final class InitiativeNeoForge {
         }
     }
 
+    /**
+     * A connection that never registered Initiative's payloads cannot take one, and NeoForge throws
+     * mid-tick rather than drop it. Only a GameTest's mock player reaches that today, since a real
+     * client without Initiative is refused at login, but a HUD update is not worth the server tick.
+     */
+    private static boolean canReceive(ServerPlayer player, CustomPacketPayload.Type<?> type) {
+        return player.connection.hasChannel(type);
+    }
+
     private static void sendTurnOrder(Player player, TurnOrderSnapshot snapshot) {
-        if (player instanceof ServerPlayer serverPlayer) {
+        if (player instanceof ServerPlayer serverPlayer && canReceive(serverPlayer, TurnOrderPayload.TYPE)) {
             PacketDistributor.sendToPlayer(serverPlayer, new TurnOrderPayload(snapshot));
         }
     }
 
     private static void sendRollAnimation(Player player, RollAnimation animation) {
-        if (player instanceof ServerPlayer serverPlayer) {
+        if (player instanceof ServerPlayer serverPlayer && canReceive(serverPlayer, RollAnimationPayload.TYPE)) {
             PacketDistributor.sendToPlayer(serverPlayer, new RollAnimationPayload(animation));
         }
     }
 
     private static void sendActionUi(Player player, ActionUiSnapshot snapshot) {
-        if (player instanceof ServerPlayer serverPlayer) {
+        if (player instanceof ServerPlayer serverPlayer && canReceive(serverPlayer, ActionUiPayload.TYPE)) {
             PacketDistributor.sendToPlayer(serverPlayer, new ActionUiPayload(snapshot));
         }
     }
@@ -161,7 +179,16 @@ public final class InitiativeNeoForge {
     }
 
     private static void onIncomingDamage(LivingIncomingDamageEvent event) {
-        if (ActionEconomy.shouldCancelVanillaDamage(event.getEntity(), event.getSource())) {
+        if (ActionEconomy.interceptVanillaDamage(event.getEntity(), event.getSource())) {
+            event.setCanceled(true);
+        }
+    }
+
+    /** A projectile entering the world: a participant's shot, which the turn and the action gate. */
+    private static void onEntityJoinLevel(EntityJoinLevelEvent event) {
+        if (!event.loadedFromDisk()
+                && event.getLevel() instanceof ServerLevel level
+                && !RangedAttacks.admits(level, event.getEntity())) {
             event.setCanceled(true);
         }
     }
@@ -189,6 +216,15 @@ public final class InitiativeNeoForge {
     private static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
             EncounterManager.playerDisconnected(player.serverLevel(), player.getUUID());
+        }
+    }
+
+    private static void onPlayerChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            ServerLevel from = player.server.getLevel(event.getFrom());
+            if (from != null) {
+                EncounterManager.playerChangedDimension(from, player.getUUID());
+            }
         }
     }
 
@@ -225,6 +261,26 @@ public final class InitiativeNeoForge {
         if (OffTurnRestriction.preventsInteraction(level, event.getEntity())) {
             event.setCanceled(true);
             OffTurnRestriction.sendRefusal(event.getEntity());
+        }
+    }
+
+    /**
+     * Using an item off turn, which unlike the other reaches may load a crossbow; and drawing or
+     * firing a ranged weapon, which waits for your turn and needs your action.
+     */
+    private static void onUseItem(PlayerInteractEvent.RightClickItem event) {
+        if (!(event.getLevel() instanceof ServerLevel level)) {
+            return;
+        }
+        if (OffTurnRestriction.preventsItemUse(level, event.getEntity(), event.getItemStack())) {
+            event.setCanceled(true);
+            OffTurnRestriction.refuseItemUse(event.getEntity());
+            return;
+        }
+        ActionEconomy.AttackStatus refused = RangedAttacks.refusesUse(level, event.getEntity(), event.getItemStack());
+        if (refused != null) {
+            event.setCanceled(true);
+            RangedAttacks.refuseUse(event.getEntity(), refused);
         }
     }
 

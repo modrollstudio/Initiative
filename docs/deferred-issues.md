@@ -8,6 +8,8 @@ fixed. Each says why, and what fixing it would take.
 - **B6** — a config file from an older Initiative version was rejected wholesale. Fixed: config is
   now read key by key against the built-in defaults, so a file missing keys a newer release added
   keeps everything it does specify. See [config](config.md#how-a-file-is-read).
+- **C11** — block placement built the turn budget without the grapple check. Fixed: placement now
+  reads the same `ActionEconomy.budgetOf` as everything else, which also scales with speed.
 
 ## `trigger_radius` has no upper bound
 
@@ -37,11 +39,6 @@ documented rather than changed:
 - **C7** — `EncounterManager.tick` iterates the live encounter list; a re-entrant `onCombat` during
   the tick would throw `ConcurrentModificationException`. No such re-entry exists today because
   Critfall's combat event does not fire for `RollService.performAttack` damage.
-- **C11** — `BlockPlacement.onPlaceAttempt` builds the turn budget with
-  `encounter.budgetFor(..., movementBudgetBlocks())` instead of the grapple-aware
-  `ActionEconomy.budgetOf`. A grappled player whose first budget-touching act of the turn is placing
-  a block gets a full movement budget instead of none. The window is one tick, because
-  `ActionEconomy.tick` establishes the budget every tick.
 - **B4** — `ActionUiSnapshot.Entry`'s enum stream codecs index `values()` directly, so a corrupt or
   hostile server→client packet throws `ArrayIndexOutOfBoundsException` in the decoder.
 - **C10** — `NativeActions.useDurability` increments damage past the item's maximum, so a fishing

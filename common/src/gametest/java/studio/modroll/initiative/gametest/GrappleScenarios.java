@@ -37,11 +37,11 @@ import studio.modroll.initiative.ui.ActionUiSnapshots;
 public final class GrappleScenarios {
 
     private static final EncounterConfig TIGHT_BUBBLE =
-            new EncounterConfig(true, true, true, false, true, true, true, 1.0, 40.0);
+            new EncounterConfig(true, true, true, false, true, true, true, true, 1.0, 40.0);
     private static final TurnConfig TURNS = new TurnConfig(true, 1000, 1000, 20.0, 12, false, false, false, Set.of());
     private static final ActionConfig ACTIONS = new ActionConfig(
-            true, 6.0, true, 4.0, false, true, true, true, true, true, true, false, 3.0, 0, 0, true, true, 3.0, 1.0, 0,
-            0, true, 8.0, true, 1.0, 0, 0);
+            true, 6.0, true, true, true, 4.0, false, true, true, true, true, true, true, false, 3.0, 0, 0, true, true,
+            3.0, 1.0, 0, 0, true, 8.0, true, 1.0, 0, 0, true, 24.0, 64.0);
     private static final GrappleConfig GRAPPLE = new GrappleConfig(true, 3.0, 0, 0, 5.0, true, 0, 0);
     private static final GrappleConfig GRAPPLE_OFF = new GrappleConfig(false, 3.0, 0, 0, 5.0, true, 0, 0);
 
@@ -139,11 +139,11 @@ public final class GrappleScenarios {
         ScenarioSupport.formEncounter(helper, player, PLAYER_FIRST, husk);
         Encounter encounter = encounter(helper, player);
         contest(ACTOR_WINS, () -> NativeActions.grapple(helper.getLevel(), player, husk));
-        if (ActionEconomy.budgetOf(encounter, player.getUUID()).movementRemaining() <= 0.0) {
+        if (ActionEconomy.budgetOf(encounter, player).movementRemaining() <= 0.0) {
             helper.fail("the grappler keeps its own movement");
         }
         encounter.turnOrder().endTurn();
-        if (ActionEconomy.budgetOf(encounter, husk.getUUID()).movementRemaining() != 0.0) {
+        if (ActionEconomy.budgetOf(encounter, husk).movementRemaining() != 0.0) {
             helper.fail("a grappled participant's turn must start with no movement");
         }
         cleanUp(player, husk);
@@ -176,8 +176,7 @@ public final class GrappleScenarios {
         ScenarioSupport.formEncounter(helper, player, PLAYER_FIRST, husk);
         Encounter encounter = encounter(helper, player);
         encounter.flags().setGrappled(player.getUUID(), husk.getUUID());
-        double heldMovement =
-                ActionEconomy.budgetOf(encounter, player.getUUID()).movementRemaining();
+        double heldMovement = ActionEconomy.budgetOf(encounter, player).movementRemaining();
         contest(ACTOR_WINS, () -> {
             NativeActions.EscapeAttempt attempt = NativeActions.escape(helper.getLevel(), player);
             if (attempt.status() != ActionEconomy.ActionOutcome.PERFORMED || !attempt.escaped()) {
@@ -204,8 +203,7 @@ public final class GrappleScenarios {
         ScenarioSupport.formEncounter(helper, player, PLAYER_FIRST, husk);
         Encounter encounter = encounter(helper, player);
         encounter.flags().setGrappled(player.getUUID(), husk.getUUID());
-        double heldMovement =
-                ActionEconomy.budgetOf(encounter, player.getUUID()).movementRemaining();
+        double heldMovement = ActionEconomy.budgetOf(encounter, player).movementRemaining();
         contest(ACTOR_LOSES, () -> {
             NativeActions.EscapeAttempt attempt = NativeActions.escape(helper.getLevel(), player);
             if (attempt.status() != ActionEconomy.ActionOutcome.PERFORMED || attempt.escaped()) {
@@ -308,6 +306,7 @@ public final class GrappleScenarios {
         InitiativeConfig.overrideEncountersForTesting(TIGHT_BUBBLE);
         InitiativeConfig.overrideTurnsForTesting(TURNS);
         InitiativeConfig.overrideActionsForTesting(ACTIONS);
+        InitiativeConfig.overrideChecksForTesting(ScenarioSupport.CHECKS_OFF);
         InitiativeConfig.overrideGrappleForTesting(grapple);
         InitiativeConfig.overrideCoverForTesting(ScenarioSupport.COVER_OFF);
         InitiativeConfig.overrideActionUiForTesting(new ActionUiConfig(true));

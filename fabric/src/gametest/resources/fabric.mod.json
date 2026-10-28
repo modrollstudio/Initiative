@@ -10,6 +10,7 @@
     "fabric-gametest": [
       "studio.modroll.initiative.fabric.gametest.CritfallApiGameTests",
       "studio.modroll.initiative.fabric.gametest.EncounterGameTests",
+      "studio.modroll.initiative.fabric.gametest.JoinGameTests",
       "studio.modroll.initiative.fabric.gametest.TurnOrderGameTests",
       "studio.modroll.initiative.fabric.gametest.FreezeGameTests",
       "studio.modroll.initiative.fabric.gametest.HudGameTests",
@@ -26,7 +27,11 @@
       "studio.modroll.initiative.fabric.gametest.OffTurnGameTests",
       "studio.modroll.initiative.fabric.gametest.ProvocationGameTests",
       "studio.modroll.initiative.fabric.gametest.ConcealmentGameTests",
-      "studio.modroll.initiative.fabric.gametest.RangedGameTests"
+      "studio.modroll.initiative.fabric.gametest.RangedGameTests",
+      "studio.modroll.initiative.fabric.gametest.RangedAttackGameTests",
+      "studio.modroll.initiative.fabric.gametest.ChecksGameTests",
+      "studio.modroll.initiative.fabric.gametest.TeleportGameTests",
+      "studio.modroll.initiative.fabric.gametest.MovementGameTests"
     ]
   },
   "depends": {

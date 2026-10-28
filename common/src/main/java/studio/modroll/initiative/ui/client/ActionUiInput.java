@@ -12,6 +12,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+import studio.modroll.initiative.action.BuiltinActions;
 import studio.modroll.initiative.ui.ActionInvokePayload;
 import studio.modroll.initiative.ui.ActionUiClientCache;
 import studio.modroll.initiative.ui.ActionUiSnapshot;
@@ -62,6 +63,20 @@ public final class ActionUiInput {
                 pendingTargets = entry.validTargetIds();
             }
         }
+    }
+
+    /**
+     * The End Turn key: the same press as the End Turn button, and refused where the button is
+     * greyed. It drops any aim in progress, which the turn it belonged to no longer needs.
+     */
+    public static void endTurn() {
+        ActionUiClientCache.current()
+                .flatMap(snapshot -> snapshot.entry(BuiltinActions.END_TURN))
+                .filter(ActionUiSnapshot.Entry::isAvailable)
+                .ifPresent(entry -> {
+                    cancel();
+                    sender.send(ActionInvokePayload.untargeted(entry.id()));
+                });
     }
 
     public static boolean isTargeting() {

@@ -26,15 +26,27 @@ Server-side only; clients receive nothing yet. All values come from [config](con
   one** encounter: one already fighting elsewhere is never pulled into a second, and encounters
   never merge.
 - **Leave** — each tick a participant is dropped when it is dead, gone from the level
-  (unloaded, dimension change), or farther than `leave_radius` from the center — except a
-  [ranged attacker](#shooting-into-a-fight-from-outside) still shooting into it. A former neutral is
+  (unloaded, dimension change), or farther than `leave_radius` from the center — except an
+  [attacker that fought its way in](#attacking-into-a-fight-from-outside) and is still at it. A former neutral is
   dropped as well once it is no longer hostile toward any player in the encounter — anger that runs
   out is a leave path like fleeing the bubble, and it takes the same exit. That one exit stands down
   while a participant is **hidden**: concealment is what took the mob's target away, not the mob
   calming down (see [Hide](actions.md#hidden-also-hides-you-from-mob-ai)). A player who
-  disconnects is dropped at once rather than a tick later; see [multiplayer](multiplayer.md).
+  disconnects is dropped at once rather than a tick later; see [multiplayer](multiplayer.md). So is a
+  player who changes dimension, by any route — a command, a portal, another mod's travel — through the
+  same exit: their turn passes on and their client's turn strip and bar clear at once. A mob that
+  changes dimension, or a player who dies and respawns elsewhere, is dropped by the next tick's sweep.
+- **Joining a fight from outside** — a player who attacks a participant, or is attacked by one,
+  joins that participant's fight from anywhere, even when the participant would not start a fight
+  on its own: a neutral iron golem another player provoked is frozen off its turn and can never turn
+  on a newcomer, so the newcomer's own hit is what brings them in. Any attacker from outside — mob
+  or player, melee or ranged — joins on its first hit, and that hit is its turn's attack: rolled
+  through Critfall, so it can miss. See [below](#attacking-into-a-fight-from-outside). The hit that
+  starts a fight is different: it lands as plain vanilla damage.
 - **End** — an encounter ends when it no longer has both a player participant and a hostile
-  participant. Level unload and server stop end all affected encounters immediately.
+  participant, or when every player in it is [hidden](actions.md#hidden-also-hides-you-from-mob-ai)
+  (`end_when_all_hidden`): its mobs lose track of the hiders. Level unload and server stop end all
+  affected encounters immediately.
 
 ## Who gets pulled in
 
@@ -111,34 +123,51 @@ encounter owns is left to vanilla rather than refused, because the swing is what
 Set `trigger_on_provoked_neutral` to `false` to switch the whole path off — encounters then form
 from `Enemy` mobs alone, exactly as they did before, within a tick of the flag changing.
 
-## Shooting into a fight from outside
+## Attacking into a fight from outside
 
-A melee mob has to close to reach you, and closing is what puts it in the bubble. A skeleton never
-has to. The attack is what makes it a participant, not where it stands: an arrow, a trident or any
-other ranged hit that reaches a participant pulls its shooter into that participant's encounter,
-however far outside `trigger_radius` it was standing. That already followed from triggering on
-Critfall's combat interaction — the arrow's owner is the attacker it reports — but the shooter was
-then dropped again a tick later for standing outside `leave_radius`, so it never took a turn and
-its next arrow was another real-time hit.
+The attack is what makes an outsider a participant, not where it stands: a melee hit, an arrow, a
+trident or any other attack that reaches a participant pulls its attacker into that participant's
+encounter, however far outside `trigger_radius` it was standing — a mob or a player, by the same
+path. That follows from triggering on Critfall's combat interaction (an arrow's owner is the attacker
+it reports), and the join happens inside that very hit, so a second real-time hit never comes.
 
-So the fight remembers who shot their way in. A participant marked that way is exempt from the
-distance leave path while it is still hostile toward a player in the encounter, read exactly the
-way the [neutral leave path](#when-a-neutral-mob-counts-as-hostile) reads it, concealment
-stand-down included. Losing its target hands it straight back to the leave radius, as does turning
+**The attack is its turn.** Joining by attacking someone already in the fight spends the attacker's
+turn for the current round, and the hit is rolled as that turn's attack instead of landing as plain
+damage: a swing as the [Attack action](actions.md#the-attack-action) rolls one, an arrow or trident as a
+turn's [ranged attack](actions.md#ranged-attacks) lands — an attack roll against the target's AC with
+the usual advantage, disadvantage and cover, Critfall's damage dice on a hit, nothing on a miss, and
+the dice shown to the table. The roll replaces the vanilla hit, so the hit can miss. Initiative only
+rolls a swing or an arrow: any other way into a fight (a creeper's blast, a spell, a snowball, or an
+arrow while `actions.ranged_attacks` is off) still joins and costs the turn, and lands as it is. If its place in the initiative order is still to come this round, the
+order passes over it once and every player in the fight is told on the action bar that it already
+acted; if its place has already gone by, there is nothing to skip. From the next round on it takes
+its turns like anyone else. A hit in the very tick a fight forms — two players focusing the same mob —
+is part of the fight starting, not an attack from outside it: it costs no turn and lands as plain
+damage, like the hit that formed the fight.
+
+**It stays in.** An attacker used to be dropped by the leave sweep on the very tick its hit joined it
+whenever it stood past `leave_radius` — a skeleton plinking from thirty blocks, or a zombie that came
+at a player near the edge of the bubble — so its next hit landed in real time and joined it all over
+again. So the fight remembers who attacked their way in, and a participant marked that way is exempt
+from the distance leave path while it is still in the fight: a mob while it is still hostile toward a
+player in the encounter, read exactly the way the
+[neutral leave path](#when-a-neutral-mob-counts-as-hostile) reads it, concealment stand-down
+included; a player while a hostile participant is within `actions.ranged_long_range_blocks` of them.
+A hostile that shoots in from outside the bubble is marked the same way. Losing its target (or, for a
+player, every hostile moving out of range) hands it straight back to the leave radius, as does turning
 `hold_ranged_attackers` off, within a tick either way. Death, unloading and dimension change are
 untouched exits.
 
-Both ends of the shot have to be in the same fight: a shot into somebody else's encounter, or one
+Both ends of the attack have to be in the same fight: a shot into somebody else's encounter, or one
 the one-encounter guard turned away, marks nobody. An arrow with no living shooter behind it — a
 dispenser's, or one whose owner died in flight — has no attacker for Critfall to report and so
 changes nothing. PvP is excluded here as everywhere else in M1: a player's arrow into another
 player forms no hostile participant.
 
-Once in, the shooter is an ordinary participant: initiative roll, freeze off-turn, suppression,
-and its shots between participants canceled like every other out-of-turn hit
-(see [actions](actions.md#initiative-is-the-sole-combat-driver)). Ranged **attack actions** are
-still deferred, so a pulled-in shooter has nothing to spend its turn on until it can reach melee;
-its turn ends on `mob_turn_timeout_ticks`.
+Once in, a shooter is an ordinary participant: initiative roll, freeze off-turn, suppression,
+and its shots off its turn refused like every other out-of-turn act. On its own turn it fires one
+[ranged attack](actions.md#ranged-attacks), rolled by Critfall, as soon as its target is within long
+range and in sight.
 
 ## Critfall handoff
 

@@ -11,6 +11,7 @@ in front of it. Turning it off changes nothing but what you see.
 | Attack | the Attack action, a mob's turn attack, an opportunity attack | the attacker's die |
 | Contest | Hide, Shove, grapple | both sides — the initiator and the opponent |
 | Initiative | joining an encounter | the joiner's die |
+| Check | Hide, when [Checks](actions.md#with-checks-installed) drives it | the hider's Stealth die |
 
 Advantage and disadvantage show **two** dice: both naturals come from Critfall's `RollDetail`, the
 kept one is drawn normally and the discarded one is greyed out. A normal roll shows one die.
@@ -22,7 +23,7 @@ face stays readable at HUD size.
 
 A crit or a fumble gets a coloured border and a one-pixel jitter while it holds. For attacks the
 flag follows Critfall's own `AttackOutcome`, so a house rule that widens the crit range stays
-Critfall's call. Contests and initiative rolls have no Critfall outcome to read, so there the
+Critfall's call. Contests, checks and initiative rolls have no Critfall outcome to read, so there the
 die's own extremes — natural 20 and natural 1 — carry the drama.
 
 ## What it does not show

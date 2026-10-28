@@ -36,14 +36,18 @@ public final class Cover {
 
     /** The cover tier the target enjoys against this attacker right now; recomputed per attack. */
     public static Tier against(Level level, LivingEntity attacker, LivingEntity target, CoverConfig cover) {
+        return against(level, attacker, attacker.getEyePosition(), target, cover);
+    }
+
+    /** Traced from {@code eye} rather than where the attacker's eye is now: a shot is aimed where it was fired. */
+    public static Tier against(Level level, LivingEntity attacker, Vec3 eye, LivingEntity target, CoverConfig cover) {
         if (!cover.enabled()) {
             return Tier.NONE;
         }
-        return tierOf(obstructedFraction(level, attacker, target), cover);
+        return tierOf(obstructedFraction(level, attacker, eye, target), cover);
     }
 
-    private static double obstructedFraction(Level level, LivingEntity attacker, LivingEntity target) {
-        Vec3 eye = attacker.getEyePosition();
+    private static double obstructedFraction(Level level, LivingEntity attacker, Vec3 eye, LivingEntity target) {
         AABB box = target.getBoundingBox().deflate(HITBOX_INSET);
         int obstructed = 0;
         int rays = 0;

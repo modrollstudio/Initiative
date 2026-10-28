@@ -16,6 +16,8 @@ class ActionConfigTest {
                 {"actions": {
                     "enabled": true,
                     "movement_budget_blocks": %s,
+                    "movement_scales_with_speed": false,
+                    "teleports_cost_movement": false,
                     "single_attack_per_turn": true,
                     "attack_reach_blocks": 3.0,
                     "end_turn_when_spent": false,
@@ -40,7 +42,10 @@ class ActionConfigTest {
                     "fishing_rod_reel": true,
                     "reel_pull_strength": 1.0,
                     "reel_attacker_bonus": 0,
-                    "reel_defender_bonus": 0
+                    "reel_defender_bonus": 0,
+                    "ranged_attacks": false,
+                    "ranged_normal_range_blocks": 16.0,
+                    "ranged_long_range_blocks": 48.0
                 }}""".formatted(movementBudget);
     }
 
@@ -76,7 +81,7 @@ class ActionConfigTest {
                     "help": true
                 }}""");
         ActionConfig config = ActionConfig.fromJson(source);
-        assertEquals(6.0, config.movementBudgetBlocks());
+        assertEquals(10.0, config.movementBudgetBlocks());
         assertEquals(3.0, config.attackReachBlocks());
         assertTrue(config.endTurnWhenSpent());
         assertReported(source, ConfigIssue.Kind.MISSING, "actions.movement_budget_blocks");
@@ -95,7 +100,7 @@ class ActionConfigTest {
     void missingActionsObjectFallsBackToEveryDefault() {
         ConfigSource source = source("{}");
         ActionConfig config = ActionConfig.fromJson(source);
-        assertEquals(6.0, config.movementBudgetBlocks());
+        assertEquals(10.0, config.movementBudgetBlocks());
         assertEquals(4.0, config.attackReachBlocks());
         assertReported(source, ConfigIssue.Kind.MISSING, "actions");
     }
@@ -104,9 +109,64 @@ class ActionConfigTest {
     void negativeMovementBudgetFallsBackToItsDefaultAlone() {
         ConfigSource source = source(complete("-1.0"));
         ActionConfig config = ActionConfig.fromJson(source);
-        assertEquals(6.0, config.movementBudgetBlocks());
+        assertEquals(10.0, config.movementBudgetBlocks());
         assertEquals(10, config.hideObserverPerceptionBonus());
         assertReported(source, ConfigIssue.Kind.INVALID, "actions.movement_budget_blocks");
+    }
+
+    @Test
+    void parsesTheMovementFields() {
+        ActionConfig config = ActionConfig.fromJson(source(complete("6.0")));
+        assertEquals(6.0, config.movementBudgetBlocks());
+        assertFalse(config.movementScalesWithSpeed());
+        assertFalse(config.teleportsCostMovement());
+    }
+
+    /** A config written before movement followed speed and teleports cost it gets both, on. */
+    @Test
+    void missingMovementTogglesDefaultToOn() {
+        ConfigSource source = source(complete("6.0")
+                .replace("\"movement_scales_with_speed\": false,\n", "")
+                .replace("\"teleports_cost_movement\": false,\n", ""));
+        ActionConfig config = ActionConfig.fromJson(source);
+        assertTrue(config.movementScalesWithSpeed());
+        assertTrue(config.teleportsCostMovement());
+        assertEquals(6.0, config.movementBudgetBlocks());
+        assertReported(source, ConfigIssue.Kind.MISSING, "actions.movement_scales_with_speed");
+        assertReported(source, ConfigIssue.Kind.MISSING, "actions.teleports_cost_movement");
+    }
+
+    @Test
+    void parsesTheRangedFields() {
+        ActionConfig config = ActionConfig.fromJson(source(complete("6.0")));
+        assertFalse(config.rangedAttacks());
+        assertEquals(16.0, config.rangedNormalRangeBlocks());
+        assertEquals(48.0, config.rangedLongRangeBlocks());
+    }
+
+    /** A config written before ranged attacks were rolled gets them on, at 24 and 64 blocks. */
+    @Test
+    void missingRangedFieldsDefaultToOnAtTheBuiltInRanges() {
+        ConfigSource source = source(complete("6.0").replaceAll(",\\s*\"ranged_[a-z_]+\": [0-9.a-z]+", ""));
+        ActionConfig config = ActionConfig.fromJson(source);
+        assertTrue(config.rangedAttacks());
+        assertEquals(24.0, config.rangedNormalRangeBlocks());
+        assertEquals(64.0, config.rangedLongRangeBlocks());
+        assertReported(source, ConfigIssue.Kind.MISSING, "actions.ranged_attacks");
+        assertReported(source, ConfigIssue.Kind.MISSING, "actions.ranged_long_range_blocks");
+    }
+
+    /** Only the built-in pair is known to agree, so a long range below the normal one reverts both. */
+    @Test
+    void aLongRangeBelowTheNormalRangeRevertsBoth() {
+        ConfigSource source = source(
+                complete("6.0").replace("\"ranged_long_range_blocks\": 48.0", "\"ranged_long_range_blocks\": 8.0"));
+        ActionConfig config = ActionConfig.fromJson(source);
+        assertEquals(24.0, config.rangedNormalRangeBlocks());
+        assertEquals(64.0, config.rangedLongRangeBlocks());
+        assertFalse(config.rangedAttacks());
+        assertReported(source, ConfigIssue.Kind.INVALID, "actions.ranged_normal_range_blocks");
+        assertReported(source, ConfigIssue.Kind.INVALID, "actions.ranged_long_range_blocks");
     }
 
     @Test
@@ -190,7 +250,7 @@ class ActionConfigTest {
     void overflowingMovementBudgetFallsBackToItsDefault() {
         ConfigSource source = source(complete("1e400"));
         ActionConfig config = ActionConfig.fromJson(source);
-        assertEquals(6.0, config.movementBudgetBlocks());
+        assertEquals(10.0, config.movementBudgetBlocks());
         assertReported(source, ConfigIssue.Kind.INVALID, "actions.movement_budget_blocks");
     }
 

@@ -32,17 +32,24 @@ import studio.modroll.initiative.encounter.EncounterManager;
  */
 public final class ConcealmentScenarios {
 
+    /**
+     * Most scenarios here hide the fight's only player to watch concealment inside the fight, so the
+     * fight must not end on everyone hiding; {@link #ALL_HIDDEN_ENDS} is the one that lets it.
+     */
     private static final EncounterConfig TIGHT_BUBBLE =
-            new EncounterConfig(true, true, true, false, true, true, true, 1.0, 8.0);
+            new EncounterConfig(true, true, true, false, true, true, true, false, 1.0, 8.0);
+
+    private static final EncounterConfig ALL_HIDDEN_ENDS =
+            new EncounterConfig(true, true, true, false, true, true, true, true, 1.0, 8.0);
     private static final EncounterConfig PROVOKED =
-            new EncounterConfig(true, true, true, true, true, true, true, 6.0, 30.0);
+            new EncounterConfig(true, true, true, true, true, true, true, false, 6.0, 30.0);
     private static final TurnConfig TURNS = new TurnConfig(true, 1000, 1000, 20.0, 12, false, false, false, Set.of());
     private static final ActionConfig ACTIONS = new ActionConfig(
-            true, 6.0, true, 4.0, true, true, true, true, true, true, true, true, 3.0, 0, 0, true, true, 3.0, 1.0, 0, 0,
-            true, 8.0, true, 1.0, 0, 0);
+            true, 6.0, true, true, true, 4.0, true, true, true, true, true, true, true, true, 3.0, 0, 0, true, true,
+            3.0, 1.0, 0, 0, true, 8.0, true, 1.0, 0, 0, true, 24.0, 64.0);
     private static final ActionConfig SUPPRESSION_OFF = new ActionConfig(
-            true, 6.0, true, 4.0, true, true, true, true, true, true, true, true, 3.0, 0, 0, false, true, 3.0, 1.0, 0,
-            0, true, 8.0, true, 1.0, 0, 0);
+            true, 6.0, true, true, true, 4.0, true, true, true, true, true, true, true, true, 3.0, 0, 0, false, true,
+            3.0, 1.0, 0, 0, true, 8.0, true, 1.0, 0, 0, true, 24.0, 64.0);
 
     private static final List<Integer> PLAYER_FIRST = List.of(20, 1);
     private static final List<Integer> HUSK_FIRST = List.of(1, 20);
@@ -243,6 +250,95 @@ public final class ConcealmentScenarios {
                 .thenSucceed();
     }
 
+    /**
+     * The spider bug: hiding took the mob's AI target away, but its driven turn still picked the
+     * nearest enemy and swung. Seen again, the same mob in the same spot attacks on its next tick,
+     * which is what proves the hider stood in its reach the whole time.
+     */
+    public static void aHiddenParticipantIsNeverAttackedOnAMobTurn(GameTestHelper helper) {
+        prepare(helper, TIGHT_BUBBLE, ACTIONS);
+        // Inside the husk's melee reach: it spawns at the block center (2.5, 1.5).
+        Player player = ScenarioSupport.spawnPlayer(helper, 2.0, 2.5);
+        Husk husk = ScenarioSupport.spawnHusk(helper, 2, 1);
+        ScenarioSupport.formEncounter(helper, player, HUSK_FIRST, husk);
+        Encounter encounter = encounterOf(helper, player);
+        encounter.flags().setHidden(player.getUUID());
+        float health = player.getHealth();
+        helper.startSequence()
+                .thenExecuteAfter(RECONCILE_TICKS + 1, () -> {
+                    if (!husk.getUUID()
+                            .equals(encounter.turnOrder().currentTurn().orElse(null))) {
+                        helper.fail("the husk must still be on its turn: it had nobody it could attack");
+                    }
+                    if (player.getHealth() < health) {
+                        helper.fail("a mob turn must never attack a hidden participant");
+                    }
+                    encounter.flags().breakHidden(player.getUUID());
+                })
+                .thenExecuteAfter(RECONCILE_TICKS, () -> {
+                    if (!player.getUUID()
+                            .equals(encounter.turnOrder().currentTurn().orElse(null))) {
+                        helper.fail("seen again, the hider must draw the husk's attack, which spends its turn");
+                    }
+                    cleanUp(player, husk);
+                })
+                .thenSucceed();
+    }
+
+    /** Every player hiding ends the fight, and its mobs cannot pick the hiders back up. */
+    public static void everyPlayerHidingEndsTheFightAndTheMobsLoseTrack(GameTestHelper helper) {
+        prepare(helper, ALL_HIDDEN_ENDS, ACTIONS);
+        Player player = ScenarioSupport.spawnPlayer(helper, 1, 1);
+        Husk husk = ScenarioSupport.spawnHusk(helper, 2, 2);
+        ScenarioSupport.formEncounter(helper, player, PLAYER_FIRST, husk);
+        husk.setTarget(player);
+        encounterOf(helper, player).flags().setHidden(player.getUUID());
+        helper.startSequence()
+                .thenExecuteAfter(RECONCILE_TICKS, () -> {
+                    if (EncounterManager.encounterContaining(helper.getLevel(), husk.getUUID())
+                            .isPresent()) {
+                        helper.fail("a fight in which every player hides must end");
+                    }
+                    if (RollService.isSuppressed(player) || RollService.isSuppressed(husk)) {
+                        helper.fail("the ended fight must hand both back to Critfall's real-time combat");
+                    }
+                    requireNoTarget(helper, husk, "the mob must lose track of the hider as the fight ends");
+                    husk.setTarget(player);
+                    requireNoTarget(helper, husk, "a mob that lost track must not pick the hider back up");
+                    player.setLastHurtMob(husk);
+                })
+                .thenExecuteAfter(RECONCILE_TICKS, () -> {
+                    husk.setTarget(player);
+                    if (!player.equals(husk.getTarget())) {
+                        helper.fail("attacking must give the hider away again");
+                    }
+                    cleanUp(player, husk);
+                })
+                .thenSucceed();
+    }
+
+    /** Lost track is bound to where the fight was: walking off leaves nobody looking for you. */
+    public static void walkingAwayFromTheLostFightEndsTheConcealment(GameTestHelper helper) {
+        prepare(helper, ALL_HIDDEN_ENDS, ACTIONS);
+        Player player = ScenarioSupport.spawnPlayer(helper, 1, 1);
+        Husk husk = ScenarioSupport.spawnHusk(helper, 2, 2);
+        ScenarioSupport.formEncounter(helper, player, PLAYER_FIRST, husk);
+        encounterOf(helper, player).flags().setHidden(player.getUUID());
+        Vec3 away = helper.absoluteVec(new Vec3(1, 1, 12));
+        helper.startSequence()
+                .thenExecuteAfter(RECONCILE_TICKS, () -> {
+                    requireConcealed(helper, player);
+                    player.teleportTo(away.x, away.y, away.z);
+                })
+                .thenExecuteAfter(RECONCILE_TICKS, () -> {
+                    if (Concealment.isConcealed(player.getUUID())) {
+                        helper.fail("past the leave radius the hider must be targetable again");
+                    }
+                    cleanUp(player, husk);
+                })
+                .thenSucceed();
+    }
+
     private static void requireConcealed(GameTestHelper helper, Player player) {
         if (!Concealment.isConcealed(player.getUUID())) {
             helper.fail("the reconcile must conceal a hidden participant");
@@ -269,6 +365,7 @@ public final class ConcealmentScenarios {
         InitiativeConfig.overrideEncountersForTesting(encounters);
         InitiativeConfig.overrideTurnsForTesting(TURNS);
         InitiativeConfig.overrideActionsForTesting(actions);
+        InitiativeConfig.overrideChecksForTesting(ScenarioSupport.CHECKS_OFF);
         InitiativeConfig.overrideGrappleForTesting(ScenarioSupport.GRAPPLE_DEFAULT);
         InitiativeConfig.overrideCoverForTesting(ScenarioSupport.COVER_OFF);
         ScenarioSupport.discardLeftoverMobsNearby(helper);

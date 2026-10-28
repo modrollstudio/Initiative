@@ -1,0 +1,14 @@
+{
+  "format_version": 1,
+  "matches": [
+    "minecraft:player"
+  ],
+  "abilities": {
+    "str": 14,
+    "dex": 14
+  },
+  "skills": {
+    "athletics": 2,
+    "stealth": 3
+  }
+}

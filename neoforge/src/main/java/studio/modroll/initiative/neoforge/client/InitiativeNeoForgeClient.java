@@ -26,7 +26,7 @@ import studio.modroll.initiative.ui.client.ActionBarRenderer;
 import studio.modroll.initiative.ui.client.ActionUiInput;
 
 /**
- * The NeoForge client wiring: HUD layers, the action-panel key, and the tick that lets a targeting
+ * The NeoForge client wiring: HUD layers, the action-panel and End Turn keys, and the tick that lets a targeting
  * click be consumed before vanilla sees it. The drawing itself lives in {@code common}'s
  * {@code client} packages.
  */
@@ -38,6 +38,13 @@ public final class InitiativeNeoForgeClient {
             KeyConflictContext.IN_GAME,
             InputConstants.Type.KEYSYM,
             GLFW.GLFW_KEY_R,
+            "key.categories.initiative");
+
+    private static final KeyMapping END_TURN = new KeyMapping(
+            "key.initiative.end_turn",
+            KeyConflictContext.IN_GAME,
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_ENTER,
             "key.categories.initiative");
 
     public InitiativeNeoForgeClient(IEventBus modBus) {
@@ -75,6 +82,7 @@ public final class InitiativeNeoForgeClient {
 
     private static void onRegisterKeyMappings(RegisterKeyMappingsEvent event) {
         event.register(ACTION_PANEL);
+        event.register(END_TURN);
     }
 
     /** Runs before vanilla reads the keybinds, which is what lets a targeting click be consumed. */
@@ -82,6 +90,9 @@ public final class InitiativeNeoForgeClient {
         ActionUiInput.tick(Minecraft.getInstance());
         while (ACTION_PANEL.consumeClick()) {
             ActionUiInput.openPanel();
+        }
+        while (END_TURN.consumeClick()) {
+            ActionUiInput.endTurn();
         }
     }
 

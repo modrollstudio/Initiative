@@ -44,9 +44,8 @@ public final class Grapples {
     }
 
     /** A held participant has no speed of its own, so its turn starts with no movement budget. */
-    static double movementBudgetFor(Encounter encounter, UUID participant) {
-        double budget = InitiativeConfig.actions().movementBudgetBlocks();
-        return encounter.flags().isGrappled(participant) ? 0.0 : budget;
+    static double movementBudgetFor(Encounter encounter, LivingEntity participant) {
+        return encounter.flags().isGrappled(participant.getUUID()) ? 0.0 : MovementSpeed.fullBudget(participant);
     }
 
     /**

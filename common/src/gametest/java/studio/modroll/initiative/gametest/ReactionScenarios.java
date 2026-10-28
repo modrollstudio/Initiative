@@ -32,21 +32,21 @@ import studio.modroll.initiative.turn.AiFreeze;
 public final class ReactionScenarios {
 
     private static final EncounterConfig TIGHT_BUBBLE =
-            new EncounterConfig(true, true, true, false, true, true, true, 1.0, 30.0);
+            new EncounterConfig(true, true, true, false, true, true, true, true, 1.0, 30.0);
     private static final TurnConfig TURNS = new TurnConfig(true, 1000, 1000, 20.0, 12, false, false, false, Set.of());
     private static final ActionConfig ACTIONS = new ActionConfig(
-            true, 6.0, true, 4.0, true, true, true, true, true, true, true, true, 3.0, 10, 0, true, true, 3.0, 1.0, 0,
-            0, true, 8.0, true, 1.0, 0, 0);
+            true, 6.0, true, true, true, 4.0, true, true, true, true, true, true, true, true, 3.0, 10, 0, true, true,
+            3.0, 1.0, 0, 0, true, 8.0, true, 1.0, 0, 0, true, 24.0, 64.0);
     private static final ActionConfig OA_OFF = new ActionConfig(
-            true, 6.0, true, 4.0, true, true, true, true, true, true, true, false, 3.0, 10, 0, true, true, 3.0, 1.0, 0,
-            0, true, 8.0, true, 1.0, 0, 0);
+            true, 6.0, true, true, true, 4.0, true, true, true, true, true, true, true, false, 3.0, 10, 0, true, true,
+            3.0, 1.0, 0, 0, true, 8.0, true, 1.0, 0, 0, true, 24.0, 64.0);
     private static final ActionConfig HIDE_OFF = new ActionConfig(
-            true, 6.0, true, 4.0, true, true, true, true, true, true, false, true, 3.0, 10, 0, true, true, 3.0, 1.0, 0,
-            0, true, 8.0, true, 1.0, 0, 0);
+            true, 6.0, true, true, true, 4.0, true, true, true, true, true, true, false, true, 3.0, 10, 0, true, true,
+            3.0, 1.0, 0, 0, true, 8.0, true, 1.0, 0, 0, true, 24.0, 64.0);
     /** Hide contest with flat 0/0 bonuses so the scripted faces map straight to win/tie/loss. */
     private static final ActionConfig HIDE_CONTEST = new ActionConfig(
-            true, 6.0, true, 4.0, true, true, true, true, true, true, true, true, 3.0, 0, 0, true, true, 3.0, 1.0, 0, 0,
-            true, 8.0, true, 1.0, 0, 0);
+            true, 6.0, true, true, true, 4.0, true, true, true, true, true, true, true, true, 3.0, 0, 0, true, true,
+            3.0, 1.0, 0, 0, true, 8.0, true, 1.0, 0, 0, true, 24.0, 64.0);
 
     private static final List<Integer> PLAYER_FIRST = List.of(20, 1);
     private static final List<Integer> HUSK_FIRST = List.of(1, 20);
@@ -121,6 +121,27 @@ public final class ReactionScenarios {
         Reactions.onMovedWithinTurn(helper.getLevel(), encounter, player, from, from.add(6, 0, 0));
         if (!encounter.flags().hasReaction(husk.getUUID())) {
             helper.fail("a disengaged mover must not provoke, so the reaction must be intact");
+        }
+        cleanUp(player, husk);
+        helper.succeed();
+    }
+
+    /** The other half of the spider bug: a hider walking off is not seen leaving anyone's reach. */
+    public static void aHiddenMoverProvokesNoOpportunityAttack(GameTestHelper helper) {
+        prepare(helper, ACTIONS);
+        Player player = ScenarioSupport.spawnPlayer(helper, 1, 1);
+        Husk husk = ScenarioSupport.spawnHusk(helper, 2, 1);
+        ScenarioSupport.formEncounter(helper, player, PLAYER_FIRST, husk);
+        Encounter encounter = encounterOf(helper, player);
+        encounter.flags().setHidden(player.getUUID());
+        Vec3 from = player.position();
+        // No dice are scripted: a hidden mover must provoke nothing, so the reaction must stay intact.
+        Reactions.onMovedWithinTurn(helper.getLevel(), encounter, player, from, from.add(6, 0, 0));
+        if (!encounter.flags().hasReaction(husk.getUUID())) {
+            helper.fail("a hidden mover must not provoke, so the reaction must be intact");
+        }
+        if (!encounter.flags().isHidden(player.getUUID())) {
+            helper.fail("moving must not break the hidden state");
         }
         cleanUp(player, husk);
         helper.succeed();
@@ -504,6 +525,7 @@ public final class ReactionScenarios {
         InitiativeConfig.overrideEncountersForTesting(TIGHT_BUBBLE);
         InitiativeConfig.overrideTurnsForTesting(TURNS);
         InitiativeConfig.overrideActionsForTesting(actions);
+        InitiativeConfig.overrideChecksForTesting(ScenarioSupport.CHECKS_OFF);
         InitiativeConfig.overrideGrappleForTesting(ScenarioSupport.GRAPPLE_DEFAULT);
         InitiativeConfig.overrideCoverForTesting(ScenarioSupport.COVER_OFF);
         ScenarioSupport.discardLeftoverHostilesNearby(helper);

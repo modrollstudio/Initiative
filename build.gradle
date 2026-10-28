@@ -28,6 +28,20 @@ subprojects {
             url = 'https://api.modrinth.com/maven'
             content { includeGroup 'maven.modrinth' }
         }
+        // TEMPORARY: CurseForge stand-in for Checks while its Modrinth ids are unset; see checksArtifact below.
+        maven {
+            name = 'CurseMaven'
+            url = 'https://cursemaven.com'
+            content { includeGroup 'curse.maven' }
+        }
+    }
+
+    // A loader's Checks jar: pinned by Modrinth version id like Critfall, or (TEMPORARY) by its
+    // CurseForge file id through CurseMaven while that Modrinth id is still empty in gradle.properties.
+    ext.checksArtifact = { String loader ->
+        def modrinthId = project.property("checks_${loader}_modrinth_id")
+        modrinthId ? "maven.modrinth:critfall-checks:${modrinthId}"
+                : "curse.maven:critfall-checks-${checks_curseforge_project_id}:${project.property("checks_${loader}_curseforge_file_id")}"
     }
 
     dependencies {

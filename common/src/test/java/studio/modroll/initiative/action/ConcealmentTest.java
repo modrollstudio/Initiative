@@ -9,10 +9,12 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
+import net.minecraft.world.phys.Vec3;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import studio.modroll.initiative.config.ActionConfig;
 import studio.modroll.initiative.config.InitiativeConfig;
+import studio.modroll.initiative.encounter.Encounter;
 
 class ConcealmentTest {
 
@@ -83,6 +85,54 @@ class ConcealmentTest {
         assertFalse(Concealment.suppressesTarget(hider));
     }
 
+    @Test
+    void aHiderIsHiddenOnlyWhileTargetingIsSuppressed() {
+        Encounter encounter = fight();
+        encounter.flags().setHidden(hider);
+        InitiativeConfig.overrideActionsForTesting(SUPPRESSING);
+        assertTrue(Concealment.hides(encounter, hider));
+        assertFalse(Concealment.hides(encounter, other));
+        InitiativeConfig.overrideActionsForTesting(TOGGLE_OFF);
+        assertFalse(Concealment.hides(encounter, hider));
+    }
+
+    @Test
+    void theFightIsLostOnlyWhenEveryPlayerHides() {
+        InitiativeConfig.overrideActionsForTesting(SUPPRESSING);
+        Encounter encounter = fight();
+        UUID secondPlayer = UUID.randomUUID();
+        encounter.add(secondPlayer, Encounter.Side.PLAYER, 0L);
+        encounter.flags().setHidden(hider);
+        assertFalse(Concealment.everyPlayerHidden(encounter));
+        encounter.flags().setHidden(secondPlayer);
+        assertTrue(Concealment.everyPlayerHidden(encounter));
+    }
+
+    /** A hiding mob is not what ends a fight: only the players' side going unseen does. */
+    @Test
+    void aHidingMobDoesNotCount() {
+        InitiativeConfig.overrideActionsForTesting(SUPPRESSING);
+        Encounter encounter = fight();
+        encounter.flags().setHidden(other);
+        assertFalse(Concealment.everyPlayerHidden(encounter));
+    }
+
+    @Test
+    void aFightWithNoPlayersIsNotLostToHiding() {
+        InitiativeConfig.overrideActionsForTesting(SUPPRESSING);
+        Encounter encounter = new Encounter(Vec3.ZERO);
+        encounter.add(other, Encounter.Side.HOSTILE, 0L);
+        assertFalse(Concealment.everyPlayerHidden(encounter));
+    }
+
+    /** The hider is a player and {@code other} a hostile, the shape of every fight here. */
+    private Encounter fight() {
+        Encounter encounter = new Encounter(Vec3.ZERO);
+        encounter.add(hider, Encounter.Side.PLAYER, 0L);
+        encounter.add(other, Encounter.Side.HOSTILE, 0L);
+        return encounter;
+    }
+
     /**
      * The gate is read from any mob's targeting decision server-wide while the encounter reconcile
      * writes, the same exposure {@code AiFreeze} guards against.
@@ -123,6 +173,8 @@ class ConcealmentTest {
                 true,
                 6.0,
                 true,
+                true,
+                true,
                 4.0,
                 true,
                 true,
@@ -146,6 +198,9 @@ class ConcealmentTest {
                 true,
                 1.0,
                 0,
-                0);
+                0,
+                true,
+                24.0,
+                64.0);
     }
 }

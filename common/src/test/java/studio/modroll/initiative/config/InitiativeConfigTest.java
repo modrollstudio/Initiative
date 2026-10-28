@@ -35,6 +35,7 @@ class InitiativeConfigTest {
         assertTrue(InitiativeConfig.rollAnimation().enabled());
         assertTrue(InitiativeConfig.rollAnimation().totalTicks() > 0);
         assertTrue(InitiativeConfig.rollAnimation().sharedVisibility());
+        assertTrue(InitiativeConfig.checks().enabled());
     }
 
     @Test
@@ -152,7 +153,7 @@ class InitiativeConfigTest {
     @Test
     void overrideReplacesLoadedConfig(@TempDir Path configDir) {
         InitiativeConfig.load(configDir);
-        EncounterConfig override = new EncounterConfig(true, true, true, false, true, true, true, 3.0, 5.0);
+        EncounterConfig override = new EncounterConfig(true, true, true, false, true, true, true, true, 3.0, 5.0);
         InitiativeConfig.overrideEncountersForTesting(override);
         assertEquals(override, InitiativeConfig.encounters());
     }

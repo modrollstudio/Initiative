@@ -1,6 +1,101 @@
 # Changelog
 
-## Unreleased
+## [0.2.0] - Unreleased
+
+- **An attack from outside a fight joins it at once and is that attacker's turn.** A mob or player
+  that attacked a participant from past the leave radius was dropped from the fight on the tick its
+  hit joined it, so its next hit landed in real time and joined it again. Anyone who attacks their
+  way in, melee or ranged, now stays in while they are still fighting, and that first attack counts
+  as their turn for the round: if their place in the order comes later that round, it is skipped,
+  with a line telling the table they already acted. From the next round they act as usual. The
+  attack itself is now rolled like any turn attack (attack roll against AC, Critfall's damage dice,
+  the dice shown), where it used to land as plain damage, so it can miss.
+  `encounters.hold_ranged_attackers` now covers every attacker that fought its way in, not only
+  shooters.
+
+- **Changing dimension leaves the fight at once.** A player who left a fight by changing dimension
+  (`/depths leave`, a portal, `/tp`) kept their turn bar on screen until the next fight. They now
+  leave the encounter immediately, the same way a disconnect does: their turn passes on, the fight
+  ends if they were its last player, and their turn strip and bar clear at once.
+
+- **Bows, crossbows and tridents work in a fight.** An arrow between two participants used to be
+  canceled, so a ranged weapon did nothing in an encounter. Firing a bow or crossbow, or throwing a
+  trident, on your turn is now an attack that uses your action, and each participant the projectile
+  reaches gets a Critfall attack roll against its AC, with Critfall damage on a hit. A miss flies on
+  past the target, a mob's as well as yours. An arrow a mob loosed just before it joined the fight
+  isn't rolled, and flies past you too instead of bouncing off. A hit still does what an arrow does: a Flame or burning arrow sets the target on
+  fire, and Punch, tipped and spectral arrows work as usual. A Multishot crossbow's arrows each roll
+  on their own, for one action. Drawing and firing wait for your turn; loading a crossbow off turn
+  still works. A shot has disadvantage when a hostile participant is within melee reach of you, or
+  when the target is beyond normal range, and beyond long range there is no shot. Cover counts as it
+  does for a melee attack. Skeletons, strays, pillagers and drowned with a trident shoot once on
+  their own turn the same way. New `actions.ranged_attacks` (default on),
+  `actions.ranged_normal_range_blocks` (default 24) and `actions.ranged_long_range_blocks` (default
+  64). Requires Critfall 0.2.16 or newer.
+
+- **Ender pearls no longer carry you out of a fight.** A participant could throw a pearl and land
+  outside the encounter, leaving it before the movement budget could stop them. Every teleport in an
+  encounter (ender pearl, chorus fruit, `/tp`, another mod's) now counts as movement on your own
+  turn: it is refused if it goes farther than the movement you have left, and otherwise costs the
+  distance it covered. Off your turn every teleport is refused. A refused pearl is still spent and
+  still hurts. A teleport provokes no opportunity attack. New `actions.teleports_cost_movement`
+  (default on); off stops checking teleports on your own turn. Blink no longer counts its jump as
+  movement either: it already costs the action.
+
+- **Mobs can't attack a hidden participant.** Hiding took a mob's AI target away, but its turn
+  still attacked the nearest enemy, hidden or not, and walking away from it while hidden provoked
+  an opportunity attack. A mob's turn now never picks a hidden participant, and a hidden mover
+  provokes no opportunity attack.
+
+- **Hiding as a party ends the fight.** When every player in an encounter is hidden, the encounter
+  ends and its mobs lose track of them. The mobs drop them as targets, and the players stay out of
+  mob targeting until they attack something, a mob hurts them, they join another fight or they
+  walk out past `leave_radius`. New `encounters.end_when_all_hidden` (default on); off means hiding
+  never ends a fight.
+
+- **10 blocks of movement, scaled by speed.** `movement_budget_blocks` now defaults to 10 instead
+  of 6, and each participant's budget follows its movement speed against its own walking speed:
+  Swiftness I gives 12 blocks and Slowness I gives 8.5. Sprinting as your turn starts doesn't
+  count. Dash and Escape grant the same scaled amount. An existing `initiative.json` keeps its
+  own `movement_budget_blocks`. New `actions.movement_scales_with_speed` (default on); off gives
+  every participant the flat budget.
+
+- **End your turn with Enter.** A new End Turn key, default Enter, does what the End Turn button
+  does. Rebind it under Controls.
+
+- **Crossbows loaded off turn now fire on your turn.** Using an item off turn was refused on the
+  server, but the client had already acted on it, so it showed a crossbow as loaded that the server
+  never loaded, and on your turn the click to fire started a new load instead. Loading a crossbow is
+  now allowed off turn; firing still waits for your turn. A refused use now resends your inventory,
+  so the client stops showing items it didn't actually use.
+
+- **Hitting a participant from outside the fight pulls you in.** A player who attacked a mob that
+  was already in someone else's fight, such as an iron golem another player had provoked, landed
+  plain vanilla damage with no roll. Critfall doesn't roll for a participant, and the frozen golem
+  could never turn on the newcomer to bring them in. A player who attacks a participant, or is
+  attacked by one, now joins that fight. The first hit lands as vanilla damage like every hit that
+  starts a fight, and the next one waits for your turn.
+
+- **Shove, Grapple, Escape and Hide roll real skills with Critfall: Checks.** Their contests used
+  flat config bonuses, the same for every participant. With Checks 0.1.0 or newer installed they now
+  roll each side's own skills through it. Shove and Grapple are your Athletics against the target's
+  Athletics or Acrobatics, whichever is higher. Escape is your Athletics or Acrobatics, whichever is
+  higher, against the grappler's Athletics. Hide is no longer a contest: you roll Stealth, you are
+  hidden, and the total is kept. On each enemy's turn its passive Perception is checked against that
+  total, and if it meets or beats it you are revealed. Attacking, being hit and leaving still reveal
+  you as before. The Stealth roll gets its own check animation, showing both dice when Checks rolls
+  it with advantage or disadvantage, and the contests animate as before. If another mod cancels one
+  of these rolls, the action fails without showing any dice. Checks stays optional: without it,
+  nothing changes and none of its classes load. New `checks.enabled` (default on); off restores the
+  flat bonuses even with Checks installed. Reel keeps its flat bonuses.
+
+- **Initiative adds your Dexterity with Critfall: Checks.** Everyone's initiative bonus came from
+  their movement speed. With Checks installed it is now each participant's Dexterity modifier, so a
+  clumsy creature can roll below its d20. Without Checks, or with `checks.enabled` off, initiative
+  still uses movement speed.
+
+- **Minecraft 1.21.1 only.** Both loaders now require exactly Minecraft 1.21.1, the only version
+  Initiative is built and tested on; the Fabric jar used to accept any later 1.21 release.
 
 - **Encounters no longer pull mobs or players through walls.** Anyone inside `trigger_radius`
   joined the fight, solid blocks or not, so a dungeon fight dragged in the mobs from the

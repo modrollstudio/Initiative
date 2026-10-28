@@ -16,7 +16,9 @@ bonus      = floor(movementSpeed × initiative_bonus_per_speed), clamped to [0, 
 
 `movementSpeed` is the entity's movement-speed attribute, mirroring Critfall's derivation
 philosophy (plausible tabletop stats from vanilla attributes). At the default scale of 20 a
-player (speed 0.1) gets +2 and a zombie (speed 0.23) gets +4. The result is stored on the
+player (speed 0.1) gets +2 and a zombie (speed 0.23) gets +4. With
+[Checks installed](actions.md#with-checks-installed) and `checks.enabled` on, the bonus is the
+participant's Dexterity modifier instead, which can be negative. The result is stored on the
 encounter as an initiative entry (participant, total, bonus).
 
 ## Turn order and tie-breaking
@@ -99,8 +101,12 @@ turn-order HUD below is the real presentation.
 ## Holding players off-turn
 
 While `restrict_players_off_turn` is on, a player who is a participant in a running encounter but
-whose turn it is **not** cannot act on the world: it may not walk, break or place a block, use an
-item, or interact with a block or an entity. Attacking was already refused by the action economy.
+whose turn it is **not** cannot act on the world: it may not walk, teleport, break or place a
+block, use an item, or interact with a block or an entity. One use is allowed: loading a
+crossbow. Loading is readying, not acting, so a crossbow loaded during someone else's turn is ready
+to fire on yours; firing it still waits. A bow or trident still drawn when your turn passes is
+lowered, so it can't be released off turn. A refused use resends your inventory, so your client does
+not keep showing a crossbow as fired or loaded when the server refused it. Attacking was already refused by the action economy.
 This is what the action UI has shown since M8 — the bar greys out off-turn — made true of the world
 as well. On the player's own turn everything works normally, movement inside the budget included.
 

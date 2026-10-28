@@ -12,6 +12,7 @@
   "initiative.command.action.done": "Action taken",
   "initiative.command.action.failed": "It comes to nothing",
   "initiative.command.end_turn.done": "Turn ended",
+  "initiative.turn.already_acted": "%s already acted this round",
   "initiative.command.dash.done": "You dash",
   "initiative.command.disengage.done": "You disengage",
   "initiative.command.dodge.done": "You dodge",
@@ -19,6 +20,7 @@
   "initiative.command.hide.done": "You slip out of sight",
   "initiative.command.hide.seen": "You fail to hide",
   "initiative.action.out_of_reach": "Out of reach",
+  "initiative.action.out_of_range": "Out of range",
   "initiative.action.missing_item": "Missing item",
   "initiative.action.total_cover": "No line of sight",
   "initiative.action.no_movement_to_build": "No movement left",
@@ -59,5 +61,6 @@
   "initiative.ui.pick_position": "%s: aim at a block, right click to cancel",
   "initiative.ui.target_ready": "%s — left click to confirm",
   "key.categories.initiative": "Critfall: Initiative",
-  "key.initiative.action_panel": "Open action panel"
+  "key.initiative.action_panel": "Open action panel",
+  "key.initiative.end_turn": "End turn"
 }

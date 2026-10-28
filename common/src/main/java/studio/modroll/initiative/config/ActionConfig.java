@@ -7,6 +7,8 @@ import static studio.modroll.initiative.config.ConfigValue.NON_NEGATIVE_DOUBLE;
 public record ActionConfig(
         boolean enabled,
         double movementBudgetBlocks,
+        boolean movementScalesWithSpeed,
+        boolean teleportsCostMovement,
         boolean singleAttackPerTurn,
         double attackReachBlocks,
         boolean endTurnWhenSpent,
@@ -31,13 +33,26 @@ public record ActionConfig(
         boolean fishingRodReel,
         double reelPullStrength,
         int reelAttackerBonus,
-        int reelDefenderBonus) {
+        int reelDefenderBonus,
+        boolean rangedAttacks,
+        double rangedNormalRangeBlocks,
+        double rangedLongRangeBlocks) {
 
     public static ActionConfig fromJson(ConfigSource source) {
         ConfigSection actions = source.section("actions");
+        double normalRange = actions.read("ranged_normal_range_blocks", NON_NEGATIVE_DOUBLE);
+        double longRange = actions.read("ranged_long_range_blocks", NON_NEGATIVE_DOUBLE);
+        if (longRange < normalRange) {
+            String reason = "ranged_long_range_blocks (" + longRange + ") is below ranged_normal_range_blocks ("
+                    + normalRange + ")";
+            normalRange = actions.revertToDefault("ranged_normal_range_blocks", NON_NEGATIVE_DOUBLE, reason);
+            longRange = actions.revertToDefault("ranged_long_range_blocks", NON_NEGATIVE_DOUBLE, reason);
+        }
         return new ActionConfig(
                 actions.read("enabled", BOOLEAN),
                 actions.read("movement_budget_blocks", NON_NEGATIVE_DOUBLE),
+                actions.read("movement_scales_with_speed", BOOLEAN),
+                actions.read("teleports_cost_movement", BOOLEAN),
                 actions.read("single_attack_per_turn", BOOLEAN),
                 actions.read("attack_reach_blocks", NON_NEGATIVE_DOUBLE),
                 actions.read("end_turn_when_spent", BOOLEAN),
@@ -62,6 +77,9 @@ public record ActionConfig(
                 actions.read("fishing_rod_reel", BOOLEAN),
                 actions.read("reel_pull_strength", NON_NEGATIVE_DOUBLE),
                 actions.read("reel_attacker_bonus", INTEGER),
-                actions.read("reel_defender_bonus", INTEGER));
+                actions.read("reel_defender_bonus", INTEGER),
+                actions.read("ranged_attacks", BOOLEAN),
+                normalRange,
+                longRange);
     }
 }

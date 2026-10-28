@@ -8,6 +8,7 @@
     "hold_ranged_attackers": true,
     "pull_nearby_players": true,
     "require_line_of_sight": true,
+    "end_when_all_hidden": true,
     "trigger_radius": 12.0,
     "leave_radius": 20.0
   },
@@ -24,7 +25,9 @@
   },
   "actions": {
     "enabled": true,
-    "movement_budget_blocks": 6.0,
+    "movement_budget_blocks": 10.0,
+    "movement_scales_with_speed": true,
+    "teleports_cost_movement": true,
     "single_attack_per_turn": true,
     "attack_reach_blocks": 4.0,
     "end_turn_when_spent": false,
@@ -49,7 +52,10 @@
     "fishing_rod_reel": true,
     "reel_pull_strength": 1.0,
     "reel_attacker_bonus": 0,
-    "reel_defender_bonus": 0
+    "reel_defender_bonus": 0,
+    "ranged_attacks": true,
+    "ranged_normal_range_blocks": 24.0,
+    "ranged_long_range_blocks": 64.0
   },
   "cover": {
     "enabled": true,
@@ -84,5 +90,8 @@
     "face_change_ticks": 2,
     "hold_readout": true,
     "shared_visibility": true
+  },
+  "checks": {
+    "enabled": true
   }
 }

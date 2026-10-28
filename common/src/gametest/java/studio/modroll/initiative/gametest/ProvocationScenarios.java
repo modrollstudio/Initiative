@@ -8,10 +8,12 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.animal.Cow;
+import net.minecraft.world.entity.animal.IronGolem;
 import net.minecraft.world.entity.animal.Panda;
 import net.minecraft.world.entity.animal.Wolf;
 import net.minecraft.world.entity.monster.Husk;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.phys.Vec3;
 import studio.modroll.critfall.api.RollService;
 import studio.modroll.critfall.api.combat.AttackResult;
 import studio.modroll.initiative.action.ActionEconomy;
@@ -33,15 +35,15 @@ import studio.modroll.initiative.turn.AiFreeze;
 public final class ProvocationScenarios {
 
     private static final EncounterConfig PROVOKED =
-            new EncounterConfig(true, true, true, true, true, true, true, 6.0, 30.0);
+            new EncounterConfig(true, true, true, true, true, true, true, true, 6.0, 30.0);
     private static final EncounterConfig PROVOKED_OFF =
-            new EncounterConfig(true, true, true, false, true, true, true, 6.0, 30.0);
+            new EncounterConfig(true, true, true, false, true, true, true, true, 6.0, 30.0);
     private static final TurnConfig TURNS = new TurnConfig(true, 1000, 1000, 20.0, 12, false, false, false, Set.of());
     private static final TurnConfig TURNS_FREEZING =
             new TurnConfig(true, 1000, 1000, 20.0, 12, true, false, false, Set.of());
     private static final ActionConfig ACTIONS = new ActionConfig(
-            true, 6.0, true, 4.0, true, true, true, true, true, true, true, true, 3.0, 10, 0, true, true, 3.0, 1.0, 0,
-            0, true, 8.0, true, 1.0, 0, 0);
+            true, 6.0, true, true, true, 4.0, true, true, true, true, true, true, true, true, 3.0, 10, 0, true, true,
+            3.0, 1.0, 0, 0, true, 8.0, true, 1.0, 0, 0, true, 24.0, 64.0);
 
     /** Drawn in join order (player, then the mob), so (20, 1) puts the player's turn first. */
     private static final List<Integer> PLAYER_FIRST = List.of(20, 1);
@@ -101,6 +103,49 @@ public final class ProvocationScenarios {
                     }
                     driveOneAttack(helper, player, panda);
                     cleanUp(player, panda);
+                })
+                .thenSucceed();
+    }
+
+    /**
+     * The playtest's iron golem: a golem a participant provoked is in that fight, suppressed and
+     * frozen off its turn. Another player, too far out to be pulled in, hit it — and the hit landed
+     * as bare vanilla damage, since Critfall stands down for a suppressed entity and nothing else
+     * rolled it, while the frozen golem could never turn on the newcomer to bring it in. Trading
+     * blows with a participant is joining its fight.
+     */
+    public static void anOutsiderWhoHitsAParticipantJoinsItsFight(GameTestHelper helper) {
+        prepare(helper, PROVOKED, ACTIONS, TURNS_FREEZING);
+        Player player = ScenarioSupport.spawnPlayer(helper, 1, 1);
+        Husk husk = ScenarioSupport.spawnHusk(helper, 2, 2);
+        ScenarioSupport.formEncounter(helper, player, PLAYER_FIRST, husk);
+        IronGolem golem = held(helper.spawn(EntityType.IRON_GOLEM, new BlockPos(3, 1, 3)));
+        Player outsider = ScenarioSupport.spawnPlayer(helper, 1, 17);
+        helper.startSequence()
+                .thenExecuteAfter(SETTLE_TICKS, () -> golem.setTarget(player))
+                .thenExecuteAfter(1, () -> {
+                    Encounter running = encounterOf(helper, player);
+                    if (!running.contains(golem.getUUID())) {
+                        helper.fail("the golem the player provoked must be in the player's fight");
+                    }
+                    Vec3 beside = helper.absoluteVec(new Vec3(2.5, 1, 17.5));
+                    golem.teleportTo(beside.x, beside.y, beside.z);
+                })
+                .thenExecuteAfter(1, () -> {
+                    if (EncounterManager.encounterContaining(helper.getLevel(), outsider.getUUID())
+                            .isPresent()) {
+                        helper.fail("the outsider must start outside every fight for the scenario to mean anything");
+                    }
+                    landOneHit(helper, outsider, golem);
+                    Encounter running = encounterOf(helper, player);
+                    if (!running.contains(outsider.getUUID())) {
+                        helper.fail("hitting a participant must put the outsider in that participant's fight");
+                    }
+                    if (!running.turnOrder().order().stream()
+                            .anyMatch(entry -> entry.participant().equals(outsider.getUUID()))) {
+                        helper.fail("the outsider must roll into the turn order, so its next swing is driven");
+                    }
+                    cleanUp(player, husk, golem, outsider);
                 })
                 .thenSucceed();
     }

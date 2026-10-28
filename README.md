@@ -10,6 +10,10 @@ save, crit, and fumble is resolved by Critfall through its public API; Initiativ
 
 **Requires Critfall.** Fully optional the other way around: Critfall works standalone.
 
+**Works with Critfall: Checks** (optional). With it installed, initiative adds Dexterity, and Shove,
+Grapple, Escape and Hide roll the participants' skills instead of flat bonuses; see
+[actions](docs/actions.md#with-checks-installed).
+
 ## Install
 
 - Minecraft 1.21.1 with NeoForge 21.1+, or Fabric Loader 0.16.9+ with Fabric API
@@ -37,14 +41,17 @@ covers each key, and the other pages in [docs](docs) cover each system.
 ## Building
 
 Critfall is consumed from the [Modrinth maven](https://api.modrinth.com/maven) under the
-`maven.modrinth:critfall` coordinates pinned in `gradle.properties`, so no local publish is needed:
+`maven.modrinth:critfall` coordinates pinned in `gradle.properties`. Checks is pinned the same way
+(`checks_*_modrinth_id`), but while those ids are empty its jars come from CurseForge through
+[CurseMaven](https://www.cursemaven.com), pinned by the `checks_*_curseforge_*` ids.
 
 ```
 ./gradlew check    # unit tests + spotless
 ./gradlew build    # initiative-neoforge-*.jar and initiative-fabric-*.jar
 ```
 
-GameTests: `./gradlew :neoforge:runGameTestServer` and `./gradlew :fabric:runGametest`.
+GameTests: `./gradlew :neoforge:runGameTestServer` and `./gradlew :fabric:runGametest`. They run with
+Checks installed; add `-PwithoutChecks` to run them as a pack without it would.
 
 ## License
 

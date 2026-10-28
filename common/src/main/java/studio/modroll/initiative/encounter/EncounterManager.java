@@ -30,6 +30,8 @@ import studio.modroll.critfall.api.dice.RollResult;
 import studio.modroll.initiative.Initiative;
 import studio.modroll.initiative.action.ActionEconomy;
 import studio.modroll.initiative.action.Concealment;
+import studio.modroll.initiative.checks.ChecksBridge;
+import studio.modroll.initiative.checks.ChecksIntegration;
 import studio.modroll.initiative.config.EncounterConfig;
 import studio.modroll.initiative.config.InitiativeConfig;
 import studio.modroll.initiative.config.TurnConfig;
@@ -40,6 +42,7 @@ import studio.modroll.initiative.turn.AiFreeze;
 import studio.modroll.initiative.turn.InitiativeDerivation;
 import studio.modroll.initiative.turn.InitiativeEntry;
 import studio.modroll.initiative.turn.OffTurnRestriction;
+import studio.modroll.initiative.turn.SkippedTurns;
 import studio.modroll.initiative.turn.TurnTimeout;
 import studio.modroll.initiative.ui.ActionUiSync;
 
@@ -83,39 +86,50 @@ public final class EncounterManager {
         }
         LivingEntity hostile = playerAttacking ? victim : attacker;
         Player player = (Player) (playerAttacking ? attacker : victim);
-        if (!triggers(hostile, player, config) || !hostile.isAlive() || !attacker.isAlive()) {
-            return;
-        }
         Encounter existing = encounterContaining(level, attacker.getUUID())
                 .or(() -> encounterContaining(level, victim.getUUID()))
                 .orElse(null);
+        boolean intoItsFight = existing != null && existing.contains(hostile.getUUID());
+        if (!(intoItsFight || triggers(hostile, player, config)) || !hostile.isAlive() || !attacker.isAlive()) {
+            return;
+        }
         if (existing != null) {
-            join(level, existing, attacker);
-            join(level, existing, victim);
-            noteRangedAttack(existing, attacker, victim, delivery);
+            // From outside a fight that had already begun: a hit on someone who joined this very tick
+            // is part of the fight forming — two players focusing one mob — and costs no turn.
+            boolean fromOutside = !existing.contains(attacker.getUUID())
+                    && existing.joinedBefore(victim.getUUID(), level.getGameTime());
+            join(level, existing, attacker, fromOutside);
+            join(level, existing, victim, false);
+            noteAggression(existing, attacker, victim, delivery, fromOutside);
             return;
         }
         Encounter encounter = new Encounter(victim.position());
         ACTIVE.computeIfAbsent(level, l -> new ArrayList<>()).add(encounter);
-        join(level, encounter, attacker);
-        join(level, encounter, victim);
-        noteRangedAttack(encounter, attacker, victim, delivery);
+        join(level, encounter, attacker, false);
+        join(level, encounter, victim, false);
+        noteAggression(encounter, attacker, victim, delivery, false);
         pullInRadius(level, encounter, config.triggerRadius());
     }
 
     /**
-     * A shot that reached a participant is what put the shooter in the fight — proximity had nothing
-     * to do with it — so the fight remembers that and stops measuring it against the leave radius.
-     * Both ends must be in this fight: a shot into someone else's, or one the one-encounter guard
-     * turned away, buys the shooter nothing. Only the hostile side is marked, since a player who
-     * shoots into a bubble joins it as a player.
+     * An attack that reached a participant is what put its attacker in the fight — proximity had
+     * nothing to do with it — so the fight remembers that and stops measuring the attacker against
+     * the leave radius. That holds for anyone who attacked their way in from outside the fight,
+     * mob or player, melee or ranged, and for a hostile shooting in from outside the bubble. Both
+     * ends must be in this fight: an attack into someone else's, or one the one-encounter guard
+     * turned away, buys the attacker nothing.
      */
-    private static void noteRangedAttack(
-            Encounter encounter, LivingEntity attacker, LivingEntity victim, AttackDelivery delivery) {
-        if (isRanged(delivery)
-                && encounter.contains(victim.getUUID())
-                && encounter.side(attacker.getUUID()) == Encounter.Side.HOSTILE) {
-            encounter.markRangedAggressor(attacker.getUUID());
+    private static void noteAggression(
+            Encounter encounter,
+            LivingEntity attacker,
+            LivingEntity victim,
+            AttackDelivery delivery,
+            boolean fromOutside) {
+        if (!encounter.contains(attacker.getUUID()) || !encounter.contains(victim.getUUID())) {
+            return;
+        }
+        if (fromOutside || isRanged(delivery) && encounter.side(attacker.getUUID()) == Encounter.Side.HOSTILE) {
+            encounter.markAggressor(attacker.getUUID());
         }
     }
 
@@ -127,7 +141,10 @@ public final class EncounterManager {
     /**
      * An always-hostile mob triggers exactly as it always has. A neutral one triggers only once it
      * is already hostile toward this player — the mob that swung at you, or the one you provoked a
-     * moment ago — which is what keeps a hit cow out of initiative.
+     * moment ago — which is what keeps a hit cow out of initiative. None of that is asked of a mob
+     * already in a fight ({@link #onCombat} skips it): a player who trades blows with one joins its
+     * fight, which is the only way in against a provoked iron golem frozen off its turn, since its
+     * AI can never turn on the newcomer.
      */
     private static boolean triggers(LivingEntity hostile, Player player, EncounterConfig config) {
         if (neverJoins(hostile)) {
@@ -153,6 +170,16 @@ public final class EncounterManager {
         encounterContaining(level, player).ifPresent(encounter -> removeParticipant(level, encounter, player));
     }
 
+    /**
+     * A player who changed dimension — a command, a portal, another mod's travel — leaves the fight in
+     * the level they left the same way a disconnect does, at once and with their client's bar and
+     * strip cleared. A mob that travels, or a player who dies and respawns elsewhere, is dropped by
+     * the next tick's sweep, which takes the same exit; this only spares the player a tick.
+     */
+    public static void playerChangedDimension(ServerLevel from, UUID player) {
+        playerDisconnected(from, player);
+    }
+
     public static void tick(ServerLevel level) {
         EncounterConfig config = InitiativeConfig.encounters();
         if (!config.enabled()) {
@@ -164,6 +191,7 @@ public final class EncounterManager {
         } else {
             Provocation.forget(level);
         }
+        Concealment.reconcileLostTrack(level);
         List<Encounter> encounters = ACTIVE.get(level);
         if (encounters == null) {
             return;
@@ -172,8 +200,13 @@ public final class EncounterManager {
         Iterator<Encounter> iterator = encounters.iterator();
         while (iterator.hasNext()) {
             Encounter encounter = iterator.next();
+            encounter.forgetOpeningAttacks();
             releaseInvalidMembers(level, encounter, config.leaveRadius());
-            if (encounter.isOver()) {
+            boolean lostTrack = config.endWhenAllHidden() && Concealment.everyPlayerHidden(encounter);
+            if (lostTrack) {
+                Concealment.loseTrack(level, encounter);
+            }
+            if (lostTrack || encounter.isOver()) {
                 TurnOrderSync.encounterEnding(level, encounter);
                 ActionUiSync.encounterEnding(level, encounter);
                 releaseAll(level, encounter);
@@ -184,6 +217,7 @@ public final class EncounterManager {
                     encounter.turnOrder().tick(TurnTimeout.forCurrentActor(level, encounter.turnOrder(), turns));
                 }
                 ActionEconomy.tick(level, encounter);
+                SkippedTurns.announce(level, encounter);
                 applyFreeze(level, encounter, turns);
                 Concealment.reconcile(level, encounter);
                 OffTurnRestriction.reconcile(level, encounter, turns);
@@ -198,6 +232,7 @@ public final class EncounterManager {
 
     public static void levelUnloaded(ServerLevel level) {
         Provocation.forget(level);
+        Concealment.forget(level);
         List<Encounter> encounters = ACTIVE.remove(level);
         if (encounters == null) {
             return;
@@ -224,8 +259,13 @@ public final class EncounterManager {
                 .findFirst();
     }
 
-    /** An entity belongs to exactly one encounter, so one already fighting elsewhere is left alone. */
-    private static void join(ServerLevel level, Encounter encounter, LivingEntity entity) {
+    /**
+     * An entity belongs to exactly one encounter, so one already fighting elsewhere is left alone.
+     * One that joins by attacking someone already here has spent this round's turn on that attack:
+     * if its slot is still to come this round, the order passes over it once, and the hit itself is
+     * left to be rolled as that turn's attack ({@code OpeningAttacks}).
+     */
+    private static void join(ServerLevel level, Encounter encounter, LivingEntity entity, boolean havingActed) {
         if (encounter.contains(entity.getUUID())
                 || encounterContaining(level, entity.getUUID()).isPresent()) {
             return;
@@ -234,13 +274,20 @@ public final class EncounterManager {
         encounter.add(entity.getUUID(), side, entity.level().getGameTime());
         RollService.suppress(entity);
         TurnConfig turns = InitiativeConfig.turns();
-        if (turns.enabled()) {
-            encounter.turnOrder().insert(rollInitiative(entity, turns));
+        if (!turns.enabled()) {
+            return;
+        }
+        InitiativeEntry entry = rollInitiative(entity, turns);
+        if (havingActed) {
+            encounter.turnOrder().insertHavingActed(entry);
+            encounter.markOpeningAttack(entity.getUUID());
+        } else {
+            encounter.turnOrder().insert(entry);
         }
     }
 
     private static InitiativeEntry rollInitiative(LivingEntity entity, TurnConfig turns) {
-        int bonus = InitiativeDerivation.bonus(entity.getAttributeValue(Attributes.MOVEMENT_SPEED), turns);
+        int bonus = initiativeBonus(entity, turns);
         RollResult roll = RollService.roll(D20);
         RollAnimationSync.play(
                 entity,
@@ -248,6 +295,14 @@ public final class EncounterManager {
                         RollDetail.of(RollMode.NORMAL, roll),
                         entity.getDisplayName().getString()));
         return new InitiativeEntry(entity.getUUID(), roll.total() + bonus, bonus);
+    }
+
+    /** With Checks, the entity's Dexterity modifier, which may be negative; without, its movement-speed bonus. */
+    private static int initiativeBonus(LivingEntity entity, TurnConfig turns) {
+        if (ChecksIntegration.enabled()) {
+            return ChecksBridge.dexterityModifier(entity);
+        }
+        return InitiativeDerivation.bonus(entity.getAttributeValue(Attributes.MOVEMENT_SPEED), turns);
     }
 
     /**
@@ -285,14 +340,14 @@ public final class EncounterManager {
         Encounter existing = encounterContaining(level, player.getUUID()).orElse(null);
         if (existing != null) {
             if (existing.isWithin(mob.position(), config.triggerRadius())) {
-                join(level, existing, mob);
+                join(level, existing, mob, false);
             }
             return;
         }
         Encounter encounter = new Encounter(mob.position());
         ACTIVE.computeIfAbsent(level, l -> new ArrayList<>()).add(encounter);
-        join(level, encounter, player);
-        join(level, encounter, mob);
+        join(level, encounter, player, false);
+        join(level, encounter, mob, false);
         pullInRadius(level, encounter, config.triggerRadius());
     }
 
@@ -310,7 +365,7 @@ public final class EncounterManager {
                         && encounter.isWithin(entity.position(), radius)
                         && belongsInFight(level, encounter, entity)
                         && encounterContaining(level, entity.getUUID()).isEmpty())) {
-            join(level, encounter, entity);
+            join(level, encounter, entity, false);
         }
     }
 
@@ -373,7 +428,7 @@ public final class EncounterManager {
             boolean valid = entity != null
                     && entity.isAlive()
                     && (encounter.isWithin(entity.position(), leaveRadius)
-                            || stillShootingIntoTheFight(level, encounter, entity))
+                            || stillAttackingTheFight(level, encounter, entity))
                     && stillHostile(level, encounter, entity);
             if (!valid) {
                 removeParticipant(level, encounter, participant);
@@ -383,16 +438,36 @@ public final class EncounterManager {
 
     /**
      * The distance exit means "you left the fight", which is not what a skeleton plinking away from
-     * thirty blocks has done — so a participant that shot its way in keeps its place while it still
-     * has someone here in its sights. Losing the target hands it back to the leave radius, and so
-     * does turning the flag off, within a tick either way. The hold reads targeting the same way the
-     * neutral leave path does, concealment stand-down included: a hider is why the sights dropped.
+     * thirty blocks has done, nor a zombie that came at a player standing near the bubble's edge —
+     * so a participant that attacked its way in keeps its place while it still has someone here in
+     * its sights. Without the hold the sweep dropped such an attacker on the very tick it joined,
+     * and its next hit landed in real time and joined it all over again. A mob's sights are read the
+     * same way the neutral leave path reads them, concealment stand-down included: a hider is why
+     * the sights dropped. A player has no target to read, so theirs are whatever hostile here is
+     * within a ranged attack's long range. Losing them hands the attacker back to the leave radius,
+     * and so does turning the flag off, within a tick either way.
      */
-    private static boolean stillShootingIntoTheFight(ServerLevel level, Encounter encounter, Entity entity) {
-        return InitiativeConfig.encounters().holdRangedAttackers()
-                && encounter.isRangedAggressor(entity.getUUID())
-                && entity instanceof Mob mob
-                && (Concealment.holdsNeutralsInTheFight(encounter) || isProvokedByAPlayerHere(level, encounter, mob));
+    private static boolean stillAttackingTheFight(ServerLevel level, Encounter encounter, Entity entity) {
+        if (!InitiativeConfig.encounters().holdRangedAttackers() || !encounter.isAggressor(entity.getUUID())) {
+            return false;
+        }
+        if (entity instanceof Mob mob) {
+            return Concealment.holdsNeutralsInTheFight(encounter) || isProvokedByAPlayerHere(level, encounter, mob);
+        }
+        return entity instanceof Player player && hostileWithinRange(level, encounter, player);
+    }
+
+    private static boolean hostileWithinRange(ServerLevel level, Encounter encounter, Player player) {
+        double range = InitiativeConfig.actions().rangedLongRangeBlocks();
+        for (UUID participant : encounter.participants()) {
+            if (encounter.side(participant) == Encounter.Side.HOSTILE
+                    && level.getEntity(participant) instanceof LivingEntity hostile
+                    && hostile.isAlive()
+                    && hostile.distanceToSqr(player) <= range * range) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -450,7 +525,7 @@ public final class EncounterManager {
         UUID current = encounter.turnOrder().currentTurn().orElse(null);
         for (UUID participant : encounter.participants()) {
             boolean acting = participant.equals(current);
-            if (!freezeActive || (acting && !ActionEconomy.actingMovementExhausted(encounter))) {
+            if (!freezeActive || (acting && !ActionEconomy.actingMovementExhausted(level, encounter))) {
                 AiFreeze.thaw(participant);
                 continue;
             }

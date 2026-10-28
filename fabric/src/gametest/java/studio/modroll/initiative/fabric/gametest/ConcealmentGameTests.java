@@ -37,4 +37,19 @@ public class ConcealmentGameTests implements FabricGameTest {
     public void aHiddenPlayerHoldsAProvokedNeutralInTheFight(GameTestHelper helper) {
         ConcealmentScenarios.aHiddenPlayerHoldsAProvokedNeutralInTheFight(helper);
     }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE, batch = "concealMobTurn")
+    public void aHiddenParticipantIsNeverAttackedOnAMobTurn(GameTestHelper helper) {
+        ConcealmentScenarios.aHiddenParticipantIsNeverAttackedOnAMobTurn(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE, batch = "concealAllHidden")
+    public void everyPlayerHidingEndsTheFightAndTheMobsLoseTrack(GameTestHelper helper) {
+        ConcealmentScenarios.everyPlayerHidingEndsTheFightAndTheMobsLoseTrack(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE, batch = "concealLostLeave")
+    public void walkingAwayFromTheLostFightEndsTheConcealment(GameTestHelper helper) {
+        ConcealmentScenarios.walkingAwayFromTheLostFightEndsTheConcealment(helper);
+    }
 }

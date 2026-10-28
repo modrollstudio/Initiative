@@ -63,4 +63,9 @@ public class ProvocationGameTests {
     public void disabledFlagStillRefusesAnOutsiderSwing(GameTestHelper helper) {
         ProvocationScenarios.disabledFlagStillRefusesAnOutsiderSwing(helper);
     }
+
+    @GameTest(template = TEMPLATE, batch = "neutralOutsider")
+    public void anOutsiderWhoHitsAParticipantJoinsItsFight(GameTestHelper helper) {
+        ProvocationScenarios.anOutsiderWhoHitsAParticipantJoinsItsFight(helper);
+    }
 }

@@ -21,6 +21,7 @@ class EncounterConfigTest {
                     "hold_ranged_attackers": false,
                     "pull_nearby_players": false,
                     "require_line_of_sight": false,
+                    "end_when_all_hidden": false,
                     "trigger_radius": %s,
                     "leave_radius": %s
                 }}""".formatted(triggerRadius, leaveRadius);
@@ -37,6 +38,7 @@ class EncounterConfigTest {
         assertFalse(config.holdRangedAttackers());
         assertFalse(config.pullNearbyPlayers());
         assertFalse(config.requireLineOfSight());
+        assertFalse(config.endWhenAllHidden());
         assertEquals(12.0, config.triggerRadius());
         assertEquals(20.0, config.leaveRadius());
         assertNothingReported(source);
@@ -94,6 +96,16 @@ class EncounterConfigTest {
         EncounterConfig config = EncounterConfig.fromJson(source);
         assertTrue(config.requireLineOfSight());
         assertReported(source, ConfigIssue.Kind.MISSING, "encounters.require_line_of_sight");
+    }
+
+    /** The key a file written before a fight could end on everyone hiding does not have. */
+    @Test
+    void missingAllHiddenKeyFallsBackToOn() {
+        ConfigSource source = source(complete("12.0", "20.0").replace("\"end_when_all_hidden\": false,\n", ""));
+        EncounterConfig config = EncounterConfig.fromJson(source);
+        assertTrue(config.endWhenAllHidden());
+        assertFalse(config.requireLineOfSight());
+        assertReported(source, ConfigIssue.Kind.MISSING, "encounters.end_when_all_hidden");
     }
 
     @Test

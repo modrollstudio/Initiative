@@ -4,6 +4,9 @@ plugins {
 
 // Gametest delegators live here, not main: shipping them in the release fabric.mod.json breaks
 // consumers, since the shared *Scenarios bodies they call are deliberately not in the jar.
+// -PwithoutChecks leaves Checks off the dev runs, so the GameTests run as a pack without it would.
+def withoutChecks = project.hasProperty('withoutChecks')
+
 sourceSets {
     gametest {
         compileClasspath += sourceSets.main.compileClasspath
@@ -32,6 +35,11 @@ dependencies {
     // modImplementation has Loom remap it to named for dev runs and load it as a mod. The version
     // here is a Modrinth version id — see the note in gradle.properties.
     modImplementation "maven.modrinth:critfall:${critfall_fabric_modrinth_id}"
+
+    // Checks on the dev runs only, so the GameTests exercise the Checks path; never a compile dependency.
+    if (!withoutChecks) {
+        modRuntimeOnly checksArtifact('fabric')
+    }
 }
 
 loom {
@@ -65,6 +73,9 @@ loom {
             source sourceSets.gametest
             property 'fabric-api.gametest'
             property 'fabric-api.gametest.report-file', "${project.buildDir}/junit.xml"
+            if (withoutChecks) {
+                property 'initiative.gametest.withoutChecks', 'true'
+            }
             ideConfigGenerated = true
         }
     }
@@ -89,7 +100,8 @@ processResources {
             minecraft_version      : minecraft_version,
             minecraft_version_range: minecraft_version_range,
             fabric_loader_version  : fabric_loader_version,
-            critfall_version       : critfall_version,
+            critfall_min_version   : critfall_min_version,
+            checks_min_version     : checks_min_version,
     ]
     inputs.properties props
     filesMatching(['fabric.mod.json', 'pack.mcmeta']) {

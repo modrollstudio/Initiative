@@ -19,6 +19,7 @@ import studio.modroll.critfall.api.RollService;
 import studio.modroll.critfall.api.dice.DiceRoller;
 import studio.modroll.initiative.action.ActionEconomy.AttackStatus;
 import studio.modroll.initiative.config.ActionConfig;
+import studio.modroll.initiative.config.ChecksConfig;
 import studio.modroll.initiative.config.CoverConfig;
 import studio.modroll.initiative.config.GrappleConfig;
 
@@ -31,8 +32,8 @@ final class ScenarioSupport {
      * batches, so every suite must pin the economy explicitly to stay order-independent.
      */
     static final ActionConfig ACTIONS_OFF = new ActionConfig(
-            false, 6.0, true, 4.0, true, true, true, true, true, true, true, true, 3.0, 10, 0, true, true, 3.0, 1.0, 0,
-            0, true, 8.0, true, 1.0, 0, 0);
+            false, 6.0, true, true, true, 4.0, true, true, true, true, true, true, true, true, 3.0, 10, 0, true, true,
+            3.0, 1.0, 0, 0, true, 8.0, true, 1.0, 0, 0, true, 24.0, 64.0);
 
     /**
      * Pre-M5b suites drive attacks in open plots and must see exactly the no-cover, free-placement
@@ -47,6 +48,12 @@ final class ScenarioSupport {
      * overrides persist across batches.
      */
     static final GrappleConfig GRAPPLE_DEFAULT = new GrappleConfig(true, 3.0, 0, 0, 5.0, true, 0, 0);
+
+    /**
+     * The GameTest runs have Checks installed, so every suite whose initiative, contests or Hide assert
+     * flat-bonus outcomes pins the integration off; the Checks suite pins it on.
+     */
+    static final ChecksConfig CHECKS_OFF = new ChecksConfig(false);
 
     private ScenarioSupport() {}
 

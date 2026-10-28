@@ -33,11 +33,7 @@ public final class BlockPlacement {
                 || !player.getUUID().equals(encounter.turnOrder().currentTurn().orElse(null))) {
             return true;
         }
-        TurnBudget budget = encounter.budgetFor(
-                encounter.turnOrder().round(),
-                player.getUUID(),
-                InitiativeConfig.actions().movementBudgetBlocks());
-        return tryCharge(budget, cover.blockPlacementMovementCost());
+        return tryCharge(ActionEconomy.budgetOf(encounter, player), cover.blockPlacementMovementCost());
     }
 
     /** Spends {@code cost} movement if the budget can afford it; returns whether the placement is allowed. */

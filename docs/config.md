@@ -38,6 +38,7 @@ Example (see [examples/initiative.json](examples/initiative.json)):
     "hold_ranged_attackers": true,
     "pull_nearby_players": true,
     "require_line_of_sight": true,
+    "end_when_all_hidden": true,
     "trigger_radius": 12.0,
     "leave_radius": 20.0
   },
@@ -54,7 +55,9 @@ Example (see [examples/initiative.json](examples/initiative.json)):
   },
   "actions": {
     "enabled": true,
-    "movement_budget_blocks": 6.0,
+    "movement_budget_blocks": 10.0,
+    "movement_scales_with_speed": true,
+    "teleports_cost_movement": true,
     "single_attack_per_turn": true,
     "attack_reach_blocks": 4.0,
     "end_turn_when_spent": false,
@@ -79,7 +82,10 @@ Example (see [examples/initiative.json](examples/initiative.json)):
     "fishing_rod_reel": true,
     "reel_pull_strength": 1.0,
     "reel_attacker_bonus": 0,
-    "reel_defender_bonus": 0
+    "reel_defender_bonus": 0,
+    "ranged_attacks": true,
+    "ranged_normal_range_blocks": 24.0,
+    "ranged_long_range_blocks": 64.0
   },
   "cover": {
     "enabled": true,
@@ -114,6 +120,9 @@ Example (see [examples/initiative.json](examples/initiative.json)):
     "face_change_ticks": 2,
     "hold_readout": true,
     "shared_visibility": true
+  },
+  "checks": {
+    "enabled": true
   }
 }
 ```
@@ -132,11 +141,12 @@ Example (see [examples/initiative.json](examples/initiative.json)):
 | `trigger_on_player_attacking` | boolean | A player attacking a hostile starts an encounter. |
 | `trigger_on_player_attacked` | boolean | A hostile attacking a player starts an encounter. |
 | `trigger_on_provoked_neutral` | boolean | A neutral mob that turns hostile toward a player starts or joins an encounter, and leaves again when it calms down. Off restores `Enemy`-only triggering. See [encounters](encounters.md#when-a-neutral-mob-counts-as-hostile). |
-| `hold_ranged_attackers` | boolean | A participant that shot its way into the fight is not measured against `leave_radius` while it still has someone in the fight in its sights. Off restores the plain distance rule, which drops a shooter that stands outside the leave radius a tick after each hit. See [encounters](encounters.md#shooting-into-a-fight-from-outside). |
+| `hold_ranged_attackers` | boolean | A participant that attacked its way into the fight — melee or ranged, mob or player — is not measured against `leave_radius` while it still has someone in the fight in its sights. Off restores the plain distance rule, which drops an attacker that stands outside the leave radius on the tick its hit joined it. See [encounters](encounters.md#attacking-into-a-fight-from-outside). |
 | `pull_nearby_players` | boolean | Players within `trigger_radius` join the encounter when it forms, and players who walk in later join mid-encounter, rolling initiative either way. Spectator and creative players are never pulled in. Off: a player joins only by attacking or being attacked. See [encounters](encounters.md#lifecycle). |
 | `require_line_of_sight` | boolean | A hostile or (with `pull_nearby_players`) a player inside `trigger_radius` is pulled in only while it can see a participant, by vanilla's own mob line-of-sight check — so a dungeon fight no longer drags in the next room through the wall. A mob that attacks a participant, a neutral that turns hostile toward one, and a player who attacks or is attacked join regardless. Off restores the radius-only pull. See [encounters](encounters.md#who-gets-pulled-in). |
+| `end_when_all_hidden` | boolean | An encounter in which every player is hidden ends, and its mobs lose track of the hiders: they stay out of mob targeting until they attack something, a mob hurts them, they join another fight or they walk out past `leave_radius` from where the fight stood. Needs `actions.hide` and `actions.hide_suppresses_targeting`. Off: hiding never ends a fight. See [encounters](encounters.md#lifecycle). |
 | `trigger_radius` | number > 0 | Blocks around the trigger point; hostiles (and, with `pull_nearby_players`, players) inside are pulled into the encounter, and those entering later join — subject to `require_line_of_sight`. |
-| `leave_radius` | number ≥ `trigger_radius` | Participants farther than this from the encounter center leave the encounter — unless `hold_ranged_attackers` is holding a shooter in. |
+| `leave_radius` | number ≥ `trigger_radius` | Participants farther than this from the encounter center leave the encounter — unless `hold_ranged_attackers` is holding an attacker in. |
 
 ## `turns`
 
@@ -147,7 +157,7 @@ See [turns](turns.md) for the mechanics.
 | `enabled` | boolean | Feature toggle for initiative and turn order. Off = plain M1 encounter bubbles. |
 | `turn_timeout_ticks` | integer > 0 | Server ticks after which a **player's** turn ends on its own (default 600 = 30 seconds). It is a stall-breaker, not the way a turn is meant to end: a decisive player clicks End Turn long before it, so the generosity only costs the table when somebody has walked away. |
 | `mob_turn_timeout_ticks` | integer > 0 | The same for a **mob's** turn (default 120 = 6 seconds). A mob acts instantly through its AI and ends its turn on the spot, so this is only the wait for one that cannot act at all. |
-| `initiative_bonus_per_speed` | number ≥ 0 | Initiative bonus per point of movement-speed attribute. |
+| `initiative_bonus_per_speed` | number ≥ 0 | Initiative bonus per point of movement-speed attribute. Unused while [Checks](#checks) supplies Dexterity. |
 | `initiative_max_bonus` | integer ≥ 0 | Upper clamp for the derived initiative bonus. |
 | `freeze_enabled` | boolean | Feature toggle for the AI freeze. Off = turn order still runs but mobs act in real time (M2a behavior). Turning it off mid-game thaws everything within a tick. |
 | `acting_marker_enabled` | boolean | Debug-grade particle marker above the entity whose turn it is, for playtest verification. Not the turn HUD. |
@@ -161,7 +171,9 @@ See [actions](actions.md) for the mechanics.
 | Field | Type | Meaning |
 |---|---|---|
 | `enabled` | boolean | Feature toggle for the M3 action economy. Off = M2 behavior: turns are plain real-time windows, no budgets, no attack interception. |
-| `movement_budget_blocks` | number ≥ 0 | Blocks of movement per turn (default 6 ≈ 30 ft). |
+| `movement_budget_blocks` | number ≥ 0 | Blocks of movement per turn at normal walking speed (default 10). |
+| `movement_scales_with_speed` | boolean | Scales each participant's movement budget by its movement speed against its own walking speed, so Swiftness gives more blocks and Slowness fewer. Off: every participant gets `movement_budget_blocks`. See [actions](actions.md#the-per-turn-budget). |
+| `teleports_cost_movement` | boolean | A teleport on your own turn (ender pearl, chorus fruit, a command, another mod's) counts as movement: refused past the movement left, charged by its horizontal distance otherwise. Off: teleports on your turn are not checked when they happen. Off-turn teleports are refused by `turns.restrict_players_off_turn` either way. See [actions](actions.md#teleports). |
 | `single_attack_per_turn` | boolean | Attacking consumes the turn's one action. Off = attacks bypass the action. |
 | `attack_reach_blocks` | number ≥ 0 | How far an attack reaches (horizontal centre-to-centre, default 4 ≈ a melee swing). Beyond it the attack is `OUT_OF_REACH` and the [turn UI](ui.md) offers no such target. |
 | `end_turn_when_spent` | boolean | A player's turn auto-ends once its action is used and its movement is exhausted. Default off since M8: the player ends the turn with the UI's End Turn button. |
@@ -173,20 +185,23 @@ See [actions](actions.md) for the mechanics.
 | `hide` | boolean | Feature toggle for the Hide action (M4b). Off = Hide is unavailable. |
 | `opportunity_attack` | boolean | Feature toggle for opportunity attacks (M4b). Off = opportunity attacks are unavailable. |
 | `opportunity_attack_reach_blocks` | number ≥ 0 | Horizontal distance (blocks) at which a hostile provokes opportunity attacks (default 3 ≈ 15 ft). |
-| `hide_observer_perception_bonus` | integer | Flat bonus added to the nearest hostile observer's roll in the Hide contest (default 0). Placeholder until the Checks mod. |
+| `hide_observer_perception_bonus` | integer | Flat bonus added to the nearest hostile observer's roll in the Hide contest (default 0). Unused while [Checks](#checks) drives Hide. |
 | `hide_stealth_bonus` | integer | Bonus added to your Stealth check roll (`d20 + hide_stealth_bonus`, default 0). |
 | `hide_suppresses_targeting` | boolean | Whether being hidden also hides you from mob AI (default on). Off = Hide keeps its roll effects only, and mobs see, path to and target a hidden participant exactly as before. |
 | `shove` | boolean | Feature toggle for the Shove action (M5a). Off = Shove is unavailable. |
 | `shove_reach_blocks` | number ≥ 0 | Horizontal distance at which you can shove a target (default 3). |
 | `shove_knockback_strength` | number ≥ 0 | Vanilla knockback impulse applied on a won shove (default 1.0). |
-| `shove_attacker_bonus` | integer | Flat bonus on your Shove contest roll (default 0). Placeholder until the Checks mod. |
-| `shove_defender_bonus` | integer | Flat bonus on the target's Shove contest roll (default 0). Placeholder. |
+| `shove_attacker_bonus` | integer | Flat bonus on your Shove contest roll (default 0). Unused while [Checks](#checks) drives Shove. |
+| `shove_defender_bonus` | integer | Flat bonus on the target's Shove contest roll (default 0). Unused while Checks drives Shove. |
 | `ender_pearl_blink` | boolean | Feature toggle for the ender-pearl blink (M5a). Off = unavailable. |
 | `blink_max_blocks` | number ≥ 0 | Max horizontal teleport distance for the blink (default 8). |
 | `fishing_rod_reel` | boolean | Feature toggle for the Reel action, the fishing-rod pull (M5a; called `fishing_rod_grapple` before M8). Off = unavailable. |
 | `reel_pull_strength` | number ≥ 0 | Vanilla knockback impulse pulling the target toward you on a won reel (default 1.0). |
 | `reel_attacker_bonus` | integer | Flat bonus on your Reel contest roll (default 0). Placeholder. |
 | `reel_defender_bonus` | integer | Flat bonus on the target's Reel contest roll (default 0). Placeholder. |
+| `ranged_attacks` | boolean | Firing a bow or crossbow, or throwing a trident, is an attack on your turn that spends your action, and each participant the projectile reaches gets Critfall's attack roll. Mobs with ranged weapons shoot once on their turn. Off = arrows between participants are canceled with no roll. See [ranged attacks](actions.md#ranged-attacks). |
+| `ranged_normal_range_blocks` | number ≥ 0 | A shot at a target farther than this from where you fired rolls with disadvantage (default 24). |
+| `ranged_long_range_blocks` | number ≥ `ranged_normal_range_blocks` | A target farther than this is out of range: no roll and no damage (default 64). Below the normal range, both revert to their defaults. |
 
 ## `cover`
 
@@ -225,12 +240,12 @@ The unarmed grapple and the escape from it (M8). See [actions](actions.md#grappl
 |---|---|---|
 | `enabled` | boolean | Feature toggle for the Grapple action. Off = Grapple is unavailable; nothing else changes. |
 | `reach_blocks` | number ≥ 0 | Horizontal distance at which you can take hold (default 3). |
-| `attacker_bonus` | integer | Flat bonus on your grapple contest roll (default 0). Placeholder until the Checks mod. |
-| `defender_bonus` | integer | Flat bonus on the target's grapple contest roll (default 0). Placeholder. |
+| `attacker_bonus` | integer | Flat bonus on your grapple contest roll (default 0). Unused while [Checks](#checks) drives Grapple. |
+| `defender_bonus` | integer | Flat bonus on the target's grapple contest roll (default 0). Unused while Checks drives Grapple. |
 | `break_distance_blocks` | number ≥ `reach_blocks` | The hold breaks once the two are further apart than this (default 5). |
 | `escape` | boolean | Feature toggle for the Escape action. Off = a hold can only end by breaking or by a side leaving. |
-| `escape_attacker_bonus` | integer | Flat bonus on the escaping participant's contest roll (default 0). Placeholder. |
-| `escape_defender_bonus` | integer | Flat bonus on the grappler's contest roll (default 0). Placeholder. |
+| `escape_attacker_bonus` | integer | Flat bonus on the escaping participant's contest roll (default 0). Unused while Checks drives Escape. |
+| `escape_defender_bonus` | integer | Flat bonus on the grappler's contest roll (default 0). Unused while Checks drives Escape. |
 
 ## `hud`
 
@@ -260,6 +275,14 @@ See [rolls](rolls.md) for what animates and who sees it.
 | `face_change_ticks` | integer ≥ 1 | Ticks between face changes while tumbling (default 2). |
 | `hold_readout` | boolean | On (default): an action-bar readout landing mid-tumble is held client-side until the dice settle, so the text cannot spoil the roll. Off = readout shows immediately. |
 | `shared_visibility` | boolean | On (default, M9): every player in the encounter watches every roll, each side of the animation naming its roller. Off = the M6 audience, the one player at the exchange. |
+
+## `checks`
+
+The optional [Critfall: Checks](actions.md#with-checks-installed) integration.
+
+| Field | Type | Meaning |
+|---|---|---|
+| `enabled` | boolean | On (default): with Checks installed, Shove, Grapple, Escape and Hide roll the participants' own skills through Checks instead of the flat config bonuses, and initiative adds Dexterity instead of the movement-speed bonus. Off, or without Checks installed: the flat bonuses and movement-speed initiative, exactly as before. |
 
 The checks each value must pass: `trigger_radius` must be positive and `leave_radius` at least
 `trigger_radius`; both turn timeouts must be positive and the two initiative values must not be

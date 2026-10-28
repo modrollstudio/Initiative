@@ -1,8 +1,10 @@
 package studio.modroll.initiative.turn;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -17,6 +19,8 @@ public final class TurnOrder {
     private static final int TICKS_PER_SECOND = 20;
 
     private final List<InitiativeEntry> entries = new ArrayList<>();
+    private final Set<UUID> actedThisRound = new HashSet<>();
+    private final List<UUID> skippedTurns = new ArrayList<>();
     private int currentIndex = 0;
     private int round = 1;
     private int ticksInCurrentTurn = 0;
@@ -29,11 +33,31 @@ public final class TurnOrder {
      * has already passed first acts next round.
      */
     public void insert(InitiativeEntry entry) {
+        insertAt(entry);
+    }
+
+    /**
+     * Inserts a participant whose way in was an act of its own — an attack on someone already here —
+     * which counts as its turn for the round it joined in. A slot still ahead this round is passed
+     * over when the order reaches it ({@link #drainSkippedTurns}); one already behind the acting
+     * participant needs nothing, since its first turn is next round anyway.
+     */
+    public void insertHavingActed(InitiativeEntry entry) {
+        if (insertAt(entry)) {
+            actedThisRound.add(entry.participant());
+            skipTurnsAlreadyTaken();
+        }
+    }
+
+    /** Whether the new entry's slot is still ahead this round (or is the forming order's first). */
+    private boolean insertAt(InitiativeEntry entry) {
         int position = insertionPoint(entry);
         entries.add(position, entry);
         if (started && position <= currentIndex) {
             currentIndex++;
+            return false;
         }
+        return true;
     }
 
     /**
@@ -46,6 +70,7 @@ public final class TurnOrder {
             return;
         }
         entries.remove(index);
+        actedThisRound.remove(participant);
         if (index < currentIndex) {
             currentIndex--;
             return;
@@ -55,9 +80,10 @@ public final class TurnOrder {
             if (currentIndex >= entries.size()) {
                 currentIndex = 0;
                 if (!entries.isEmpty()) {
-                    round++;
+                    startNextRound();
                 }
             }
+            skipTurnsAlreadyTaken();
         }
     }
 
@@ -67,10 +93,41 @@ public final class TurnOrder {
         if (entries.isEmpty()) {
             return;
         }
+        advance();
+        skipTurnsAlreadyTaken();
+    }
+
+    /**
+     * The participants whose turn was passed over since the last call because they had already
+     * acted this round, in the order they were passed; the encounter tells its players.
+     */
+    public List<UUID> drainSkippedTurns() {
+        List<UUID> drained = List.copyOf(skippedTurns);
+        skippedTurns.clear();
+        return drained;
+    }
+
+    private void advance() {
         currentIndex++;
         if (currentIndex >= entries.size()) {
             currentIndex = 0;
-            round++;
+            startNextRound();
+        }
+    }
+
+    private void startNextRound() {
+        round++;
+        actedThisRound.clear();
+    }
+
+    /** Each pass removes one participant from the acted set, so it ends within one lap at most. */
+    private void skipTurnsAlreadyTaken() {
+        while (!entries.isEmpty()
+                && actedThisRound.remove(entries.get(currentIndex).participant())) {
+            skippedTurns.add(entries.get(currentIndex).participant());
+            started = true;
+            ticksInCurrentTurn = 0;
+            advance();
         }
     }
 

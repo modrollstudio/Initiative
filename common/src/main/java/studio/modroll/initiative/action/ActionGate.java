@@ -197,7 +197,7 @@ public final class ActionGate {
     }
 
     private static TurnBudget actingBudget(Encounter encounter, LivingEntity actor) {
-        return ActionEconomy.budgetOf(encounter, actor.getUUID());
+        return ActionEconomy.budgetOf(encounter, actor);
     }
 
     private static void spend(
