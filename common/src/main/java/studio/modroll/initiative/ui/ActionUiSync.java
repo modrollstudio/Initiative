@@ -61,8 +61,16 @@ public final class ActionUiSync {
         }
     }
 
+    /**
+     * The player is found through the player list first: one who left by changing dimension is no
+     * longer in {@code level}, and their bar must still clear.
+     */
     public static void participantRemoved(ServerLevel level, Encounter encounter, UUID participant) {
-        if (level.getEntity(participant) instanceof Player player) {
+        Player player = level.getServer().getPlayerList().getPlayer(participant);
+        if (player == null && level.getEntity(participant) instanceof Player inLevel) {
+            player = inLevel;
+        }
+        if (player != null) {
             send(encounter, player, ActionUiSnapshot.INACTIVE);
         }
     }

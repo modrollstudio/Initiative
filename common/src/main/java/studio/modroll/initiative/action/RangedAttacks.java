@@ -187,6 +187,29 @@ public final class RangedAttacks {
                 RollAnimation.attack(result, shooter.getDisplayName().getString()));
     }
 
+    /**
+     * An outsider's joining arrow, rolled as the turn shot it counts as. It was loosed before its
+     * shooter was in the fight, so it carries no shot: one is recorded for it now, from where the
+     * shooter stands, spending no action — the turn it counts as is the one the order will skip.
+     */
+    static void landOpeningShot(
+            ServerLevel level, Encounter encounter, LivingEntity shooter, LivingEntity target, DamageSource source) {
+        if (!(source.getDirectEntity() instanceof AbstractArrow arrow)) {
+            return;
+        }
+        ActionConfig actions = InitiativeConfig.actions();
+        encounter.recordShot(
+                arrow.getUUID(),
+                new RangedShot(
+                        shooter.getUUID(),
+                        shooter.position(),
+                        shooter.getEyePosition(),
+                        ActionEconomy.spendAttackerAdvantage(encounter, actions, shooter),
+                        hostileWithinReach(level, encounter, shooter, actions.attackReachBlocks()),
+                        level.getGameTime()));
+        land(level, encounter, shooter, target, source);
+    }
+
     /** A mob that shoots rather than swings on its turn: a ranged attacker with a bow, crossbow or trident in hand. */
     static boolean shootsOnItsTurn(Mob mob) {
         return active()

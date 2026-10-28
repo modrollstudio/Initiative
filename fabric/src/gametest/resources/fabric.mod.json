@@ -10,6 +10,7 @@
     "fabric-gametest": [
       "studio.modroll.initiative.fabric.gametest.CritfallApiGameTests",
       "studio.modroll.initiative.fabric.gametest.EncounterGameTests",
+      "studio.modroll.initiative.fabric.gametest.JoinGameTests",
       "studio.modroll.initiative.fabric.gametest.TurnOrderGameTests",
       "studio.modroll.initiative.fabric.gametest.FreezeGameTests",
       "studio.modroll.initiative.fabric.gametest.HudGameTests",

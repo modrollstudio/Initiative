@@ -2,6 +2,22 @@
 
 ## [0.2.0] - Unreleased
 
+- **An attack from outside a fight joins it at once and is that attacker's turn.** A mob or player
+  that attacked a participant from past the leave radius was dropped from the fight on the tick its
+  hit joined it, so its next hit landed in real time and joined it again. Anyone who attacks their
+  way in, melee or ranged, now stays in while they are still fighting, and that first attack counts
+  as their turn for the round: if their place in the order comes later that round, it is skipped,
+  with a line telling the table they already acted. From the next round they act as usual. The
+  attack itself is now rolled like any turn attack (attack roll against AC, Critfall's damage dice,
+  the dice shown), where it used to land as plain damage, so it can miss.
+  `encounters.hold_ranged_attackers` now covers every attacker that fought its way in, not only
+  shooters.
+
+- **Changing dimension leaves the fight at once.** A player who left a fight by changing dimension
+  (`/depths leave`, a portal, `/tp`) kept their turn bar on screen until the next fight. They now
+  leave the encounter immediately, the same way a disconnect does: their turn passes on, the fight
+  ends if they were its last player, and their turn strip and bar clear at once.
+
 - **Bows, crossbows and tridents work in a fight.** An arrow between two participants used to be
   canceled, so a ranged weapon did nothing in an encounter. Firing a bow or crossbow, or throwing a
   trident, on your turn is now an attack that uses your action, and each participant the projectile

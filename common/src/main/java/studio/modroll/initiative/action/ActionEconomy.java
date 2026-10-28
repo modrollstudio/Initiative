@@ -188,13 +188,34 @@ public final class ActionEconomy {
         if (tier == Cover.Tier.TOTAL && cover.totalCoverBlocksAttack()) {
             return ActionResult.rejected(ActionStatus.TOTAL_COVER);
         }
+        AttackResult result = rollAttack(level, encounter, attacker, target, Cover.acBonus(tier, cover));
+        context.showRoll(result, target);
+        return ActionResult.attacked(result);
+    }
+
+    /**
+     * An outsider's joining swing, rolled as the turn attack it counts as: the Attack action's roll,
+     * mode and cover bonus, shown the same way. The swing has already landed in the world, so there
+     * is no turn, action or total-cover refusal to ask about — only the dice.
+     */
+    static void openingAttack(ServerLevel level, Encounter encounter, LivingEntity attacker, LivingEntity target) {
+        CoverConfig cover = InitiativeConfig.cover();
+        int acBonus = Cover.acBonus(Cover.against(level, attacker, target, cover), cover);
+        AttackResult result = rollAttack(level, encounter, attacker, target, acBonus);
+        RollAnimationSync.play(
+                attacker,
+                target,
+                RollAnimation.attack(result, attacker.getDisplayName().getString()));
+    }
+
+    private static AttackResult rollAttack(
+            ServerLevel level, Encounter encounter, LivingEntity attacker, LivingEntity target, int acBonus) {
         RollMode mode = attackMode(encounter, InitiativeConfig.actions(), attacker, target);
-        AttackResult result = drive(level, attacker, target, mode, Cover.acBonus(tier, cover));
+        AttackResult result = drive(level, attacker, target, mode, acBonus);
         if (result.isHit()) {
             encounter.flags().breakHidden(target.getUUID());
         }
-        context.showRoll(result, target);
-        return ActionResult.attacked(result);
+        return result;
     }
 
     /** Dash: extra movement equal to the actor's full budget, spending the action. */
@@ -470,7 +491,9 @@ public final class ActionEconomy {
      * read as of the previous tick ({@link Encounter#joinedBefore}), so the encounter-forming hit —
      * which joins both sides mid-hurt — still lands as plain vanilla damage on every loader. The
      * arrow of a ranged attack is canceled the same way, and its roll is driven here in its place
-     * ({@link RangedAttacks#land}). True means the loader cancels the hurt.
+     * ({@link RangedAttacks#land}). An outsider's hit on someone already in the fight is its turn's
+     * attack, and is canceled and rolled the same way ({@link OpeningAttacks}). True means the
+     * loader cancels the hurt.
      */
     public static boolean interceptVanillaDamage(LivingEntity target, DamageSource source) {
         if (!active() || RollService.isDrivenDamage(target)) {
@@ -481,6 +504,9 @@ public final class ActionEconomy {
         }
         if (!(source.getEntity() instanceof LivingEntity attacker) || attacker == target) {
             return false;
+        }
+        if (OpeningAttacks.intercept(level, attacker, target, source)) {
+            return true;
         }
         long now = level.getGameTime();
         Encounter encounter =
