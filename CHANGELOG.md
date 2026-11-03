@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+- Built and tested against Critfall 0.2.18 and Checks 0.1.4. From Critfall 0.2.18, armor reduces
+  rolled hits again, so a target in a fight can lose less health than the roll. Initiative still
+  works with Critfall 0.2.16 or newer.
+
 ## [0.2.1] - 2026-10-28
 
 - **Mobs and players who attack a fight from outside now join on their first hit.** That hit is
