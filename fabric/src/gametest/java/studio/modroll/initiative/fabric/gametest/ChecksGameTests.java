@@ -63,6 +63,16 @@ public class ChecksGameTests implements FabricGameTest {
         ChecksScenarios.aDullEnemyLeavesTheHiderHidden(helper);
     }
 
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE, batch = "checksRestBlocked")
+    public void anEncounterBlocksShortRests(GameTestHelper helper) {
+        ChecksScenarios.anEncounterBlocksShortRests(helper);
+    }
+
+    @GameTest(template = FabricGameTest.EMPTY_STRUCTURE, batch = "checksRestNotBlocked")
+    public void restsInAFightWhenNotBlocked(GameTestHelper helper) {
+        ChecksScenarios.restsInAFightWhenNotBlocked(helper);
+    }
+
     @GameTest(template = FabricGameTest.EMPTY_STRUCTURE, batch = "checksToggledOff")
     public void toggledOffUsesFlatBonuses(GameTestHelper helper) {
         ChecksScenarios.toggledOffUsesFlatBonuses(helper);

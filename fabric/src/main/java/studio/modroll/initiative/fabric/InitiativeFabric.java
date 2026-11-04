@@ -66,6 +66,7 @@ public final class InitiativeFabric implements ModInitializer {
     public void onInitialize() {
         Initiative.init(FabricLoader.getInstance().getConfigDir());
         ChecksIntegration.setPresent(FabricLoader.getInstance().isModLoaded(ChecksIntegration.MOD_ID));
+        ChecksIntegration.registerRestBlocker();
         PayloadTypeRegistry.playS2C().register(TurnOrderPayload.TYPE, TurnOrderPayload.STREAM_CODEC);
         PayloadTypeRegistry.playS2C().register(RollAnimationPayload.TYPE, RollAnimationPayload.STREAM_CODEC);
         PayloadTypeRegistry.playS2C().register(ActionUiPayload.TYPE, ActionUiPayload.STREAM_CODEC);

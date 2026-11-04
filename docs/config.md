@@ -122,7 +122,8 @@ Example (see [examples/initiative.json](examples/initiative.json)):
     "shared_visibility": true
   },
   "checks": {
-    "enabled": true
+    "enabled": true,
+    "block_short_rests": true
   }
 }
 ```
@@ -283,6 +284,7 @@ The optional [Critfall: Checks](actions.md#with-checks-installed) integration.
 | Field | Type | Meaning |
 |---|---|---|
 | `enabled` | boolean | On (default): with Checks installed, Shove, Grapple, Escape and Hide roll the participants' own skills through Checks instead of the flat config bonuses, and initiative adds Dexterity instead of the movement-speed bonus. Off, or without Checks installed: the flat bonuses and movement-speed initiative, exactly as before. |
+| `block_short_rests` | boolean | On (default): with Checks installed and `enabled` on, a player in an encounter can't take Checks' short rest at a campfire, and a rest under way breaks when they are pulled into a fight. They can rest again as soon as they leave the encounter. Off: Checks' own rules decide. |
 
 The checks each value must pass: `trigger_radius` must be positive and `leave_radius` at least
 `trigger_radius`; both turn timeouts must be positive and the two initiative values must not be

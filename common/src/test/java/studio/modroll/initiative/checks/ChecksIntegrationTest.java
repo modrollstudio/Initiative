@@ -21,31 +21,31 @@ class ChecksIntegrationTest {
 
     @Test
     void withoutChecksInstalledItIsInactiveWithoutTouchingChecks() {
-        InitiativeConfig.overrideChecksForTesting(new ChecksConfig(true));
+        InitiativeConfig.overrideChecksForTesting(new ChecksConfig(true, true));
         ChecksIntegration.setPresent(false);
         assertFalse(ChecksIntegration.active());
     }
 
     @Test
     void switchedOffItIsInactiveWithoutTouchingChecks() {
-        InitiativeConfig.overrideChecksForTesting(new ChecksConfig(false));
+        InitiativeConfig.overrideChecksForTesting(new ChecksConfig(false, true));
         ChecksIntegration.setPresent(true);
         assertFalse(ChecksIntegration.active());
     }
 
     @Test
     void installedAndOnItIsEnabledWithoutTouchingChecks() {
-        InitiativeConfig.overrideChecksForTesting(new ChecksConfig(true));
+        InitiativeConfig.overrideChecksForTesting(new ChecksConfig(true, true));
         ChecksIntegration.setPresent(true);
         assertTrue(ChecksIntegration.enabled());
     }
 
     @Test
     void withoutChecksInstalledOrSwitchedOffItIsNotEnabled() {
-        InitiativeConfig.overrideChecksForTesting(new ChecksConfig(true));
+        InitiativeConfig.overrideChecksForTesting(new ChecksConfig(true, true));
         ChecksIntegration.setPresent(false);
         assertFalse(ChecksIntegration.enabled());
-        InitiativeConfig.overrideChecksForTesting(new ChecksConfig(false));
+        InitiativeConfig.overrideChecksForTesting(new ChecksConfig(false, true));
         ChecksIntegration.setPresent(true);
         assertFalse(ChecksIntegration.enabled());
     }

@@ -67,6 +67,7 @@ public final class InitiativeNeoForge {
     public InitiativeNeoForge(IEventBus modBus) {
         Initiative.init(FMLPaths.CONFIGDIR.get());
         ChecksIntegration.setPresent(ModList.get().isLoaded(ChecksIntegration.MOD_ID));
+        ChecksIntegration.registerRestBlocker();
         TurnOrderSync.setSender(InitiativeNeoForge::sendTurnOrder);
         RollAnimationSync.setSender(InitiativeNeoForge::sendRollAnimation);
         ActionUiSync.setSender(InitiativeNeoForge::sendActionUi);
