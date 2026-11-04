@@ -69,6 +69,16 @@ public class ChecksGameTests {
         ChecksScenarios.aDullEnemyLeavesTheHiderHidden(helper);
     }
 
+    @GameTest(template = TEMPLATE, batch = "checksRestBlocked")
+    public void anEncounterBlocksShortRests(GameTestHelper helper) {
+        ChecksScenarios.anEncounterBlocksShortRests(helper);
+    }
+
+    @GameTest(template = TEMPLATE, batch = "checksRestNotBlocked")
+    public void restsInAFightWhenNotBlocked(GameTestHelper helper) {
+        ChecksScenarios.restsInAFightWhenNotBlocked(helper);
+    }
+
     @GameTest(template = TEMPLATE, batch = "checksToggledOff")
     public void toggledOffUsesFlatBonuses(GameTestHelper helper) {
         ChecksScenarios.toggledOffUsesFlatBonuses(helper);

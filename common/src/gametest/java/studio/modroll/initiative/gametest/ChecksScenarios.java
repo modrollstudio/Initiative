@@ -1,17 +1,38 @@
 package studio.modroll.initiative.gametest;
 
+import com.mojang.authlib.GameProfile;
+import io.netty.channel.embedded.EmbeddedChannel;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Supplier;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.network.Connection;
+import net.minecraft.network.PacketSendListener;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.contents.TranslatableContents;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.PacketFlow;
+import net.minecraft.network.protocol.game.ClientboundSystemChatPacket;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.network.CommonListenerCookie;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.monster.Slime;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
 import studio.modroll.critfall.api.RollService;
 import studio.modroll.critfall.api.combat.ContestResult;
 import studio.modroll.critfall.api.dice.RollDetail;
@@ -57,7 +78,14 @@ public final class ChecksScenarios {
     private static final ActionConfig ACTIONS = new ActionConfig(
             true, 6.0, true, true, true, 4.0, false, true, true, true, true, true, true, false, 3.0, 0, 0, true, true,
             3.0, 1.0, 0, 0, true, 8.0, true, 1.0, 0, 0, true, 24.0, 64.0);
-    private static final ChecksConfig CHECKS_ON = new ChecksConfig(true);
+    /** The rest scenarios need the player by the fire pulled into a fight they took no part in. */
+    private static final EncounterConfig PULLING_BUBBLE =
+            new EncounterConfig(true, true, true, false, true, true, false, false, 12.0, 40.0);
+
+    private static final ChecksConfig CHECKS_ON = new ChecksConfig(true, true);
+    private static final BlockPos FIRE = new BlockPos(1, 1, 1);
+    private static final Vec3 BY_THE_FIRE = new Vec3(1.5, 1, 2.5);
+    private static final String REST_BLOCKED = "checks.rest.reason.blocked";
     private static final boolean WITHOUT_CHECKS = Boolean.getBoolean("initiative.gametest.withoutChecks");
 
     private static final int PLAYER_DEXTERITY = 2;
@@ -311,9 +339,88 @@ public final class ChecksScenarios {
         hideThenPassTheTurn(helper, EntityType.SPIDER, SPIDER_PASSIVE_PERCEPTION, true);
     }
 
+    /**
+     * A player resting by a campfire is pulled into a friend's fight: Checks breaks the rest, won't
+     * start another while they are in the encounter, and lets them rest once it is over. The foe is a
+     * slime, an enemy but no {@code Monster}, so Checks' own monsters nearby rule can't be what stops
+     * the rest.
+     */
+    public static void anEncounterBlocksShortRests(GameTestHelper helper) {
+        if (!prepareWithChecks(helper)) {
+            return;
+        }
+        InitiativeConfig.overrideEncountersForTesting(PULLING_BUBBLE);
+        Rester rester = rester(helper);
+        Player friend = ScenarioSupport.spawnPlayer(helper, 4, 4);
+        Slime slime = spawnSlime(helper);
+        Runnable cleanUp = () -> {
+            logout(helper, rester.player());
+            helper.setBlock(FIRE, Blocks.AIR.defaultBlockState());
+            cleanUp(friend, slime);
+        };
+        helper.startSequence()
+                .thenExecute(cleaningUp(cleanUp, () -> {
+                    useFire(helper, rester.player());
+                    expectRestLine(helper, rester.sent(), "checks.rest.short.started");
+                    ScenarioSupport.formEncounter(helper, friend, List.of(20, 1, 10), slime);
+                    if (EncounterManager.encounterContaining(
+                                    helper.getLevel(), rester.player().getUUID())
+                            .isEmpty()) {
+                        helper.fail("the resting player must be pulled into the fight beside them");
+                    }
+                }))
+                .thenExecuteAfter(2, cleaningUp(cleanUp, () -> {
+                    expectRestLine(helper, rester.sent(), "checks.rest.short.broken", REST_BLOCKED);
+                    useFire(helper, rester.player());
+                    expectRestLine(helper, rester.sent(), "checks.rest.short.cannot", REST_BLOCKED);
+                    slime.discard();
+                }))
+                .thenExecuteAfter(5, cleaningUp(cleanUp, () -> {
+                    if (EncounterManager.encounterContaining(
+                                    helper.getLevel(), rester.player().getUUID())
+                            .isPresent()) {
+                        helper.fail("the fight must end once its last foe is gone");
+                    }
+                    useFire(helper, rester.player());
+                    expectRestLine(helper, rester.sent(), "checks.rest.short.started");
+                    cleanUp.run();
+                }))
+                .thenSucceed();
+    }
+
+    /** With {@code checks.block_short_rests} off, a player in an encounter can rest as Checks allows. */
+    public static void restsInAFightWhenNotBlocked(GameTestHelper helper) {
+        if (!prepareWithChecks(helper)) {
+            return;
+        }
+        InitiativeConfig.overrideChecksForTesting(new ChecksConfig(true, false));
+        InitiativeConfig.overrideEncountersForTesting(PULLING_BUBBLE);
+        Rester rester = rester(helper);
+        Player friend = ScenarioSupport.spawnPlayer(helper, 4, 4);
+        Slime slime = spawnSlime(helper);
+        Runnable cleanUp = () -> {
+            logout(helper, rester.player());
+            helper.setBlock(FIRE, Blocks.AIR.defaultBlockState());
+            cleanUp(friend, slime);
+        };
+        cleaningUp(cleanUp, () -> {
+                    ScenarioSupport.formEncounter(helper, friend, List.of(20, 1, 10), slime);
+                    if (EncounterManager.encounterContaining(
+                                    helper.getLevel(), rester.player().getUUID())
+                            .isEmpty()) {
+                        helper.fail("the player by the fire must be pulled into the fight beside them");
+                    }
+                    useFire(helper, rester.player());
+                    expectRestLine(helper, rester.sent(), "checks.rest.short.started");
+                    cleanUp.run();
+                })
+                .run();
+        helper.succeed();
+    }
+
     /** Checks installed but switched off: the flat bonuses come back. */
     public static void toggledOffUsesFlatBonuses(GameTestHelper helper) {
-        prepare(helper, new ChecksConfig(false));
+        prepare(helper, new ChecksConfig(false, true));
         requireFlatRolls(helper);
     }
 
@@ -521,6 +628,95 @@ public final class ChecksScenarios {
             helper.fail("the GameTest runs must have Checks installed, or be started with -PwithoutChecks");
         }
         return true;
+    }
+
+    /** A real server player, as vanilla's mock one, whose every sent packet lands in {@code sent}. */
+    private record Rester(ServerPlayer player, List<Packet<?>> sent) {}
+
+    /** In survival by a lit campfire, empty handed: what Checks needs to start a short rest. */
+    private static Rester rester(GameTestHelper helper) {
+        helper.setBlock(FIRE, Blocks.CAMPFIRE.defaultBlockState());
+        List<Packet<?>> sent = new ArrayList<>();
+        Connection connection = new Connection(PacketFlow.SERVERBOUND) {
+            @Override
+            public void send(Packet<?> packet, PacketSendListener listener, boolean flush) {
+                sent.add(packet);
+                super.send(packet, listener, flush);
+            }
+        };
+        MinecraftServer server = helper.getLevel().getServer();
+        CommonListenerCookie cookie =
+                CommonListenerCookie.createInitial(new GameProfile(UUID.randomUUID(), "rester"), false);
+        ServerPlayer player =
+                new ServerPlayer(server, helper.getLevel(), cookie.gameProfile(), cookie.clientInformation());
+        new EmbeddedChannel(connection);
+        server.getPlayerList().placeNewPlayer(connection, player, cookie);
+        player.setGameMode(GameType.SURVIVAL);
+        player.moveTo(helper.absoluteVec(BY_THE_FIRE));
+        return new Rester(player, sent);
+    }
+
+    private static void logout(GameTestHelper helper, ServerPlayer player) {
+        helper.getLevel().getServer().getPlayerList().remove(player);
+    }
+
+    private static void useFire(GameTestHelper helper, ServerPlayer player) {
+        BlockPos pos = helper.absolutePos(FIRE);
+        player.gameMode.useItemOn(
+                player,
+                helper.getLevel(),
+                player.getMainHandItem(),
+                InteractionHand.MAIN_HAND,
+                new BlockHitResult(Vec3.atCenterOf(pos), Direction.UP, pos, false));
+    }
+
+    /** Big enough that the hit forming the fight can't kill it; still and touching nobody. */
+    private static Slime spawnSlime(GameTestHelper helper) {
+        Slime slime = spawnStill(helper, EntityType.SLIME, 7, 4);
+        slime.setSize(4, true);
+        return slime;
+    }
+
+    /**
+     * Exactly one chat line about rests was sent since the last call, under {@code key}, and its one
+     * argument, when {@code reason} is given, is the line under that key. Clears {@code sent}.
+     */
+    private static void expectRestLine(GameTestHelper helper, List<Packet<?>> sent, String key, String... reason) {
+        List<TranslatableContents> lines = sent.stream()
+                .filter(ClientboundSystemChatPacket.class::isInstance)
+                .map(packet -> ((ClientboundSystemChatPacket) packet).content().getContents())
+                .filter(TranslatableContents.class::isInstance)
+                .map(TranslatableContents.class::cast)
+                .filter(line -> line.getKey().startsWith("checks.rest."))
+                .toList();
+        sent.clear();
+        if (lines.size() != 1 || !lines.getFirst().getKey().equals(key)) {
+            helper.fail("expected the one rest line " + key + " but got "
+                    + lines.stream().map(TranslatableContents::getKey).toList());
+        }
+        if (reason.length == 0) {
+            return;
+        }
+        Object[] args = lines.getFirst().getArgs();
+        boolean matches = args.length == 1
+                && args[0] instanceof Component component
+                && component.getContents() instanceof TranslatableContents why
+                && why.getKey().equals(reason[0]);
+        if (!matches) {
+            helper.fail(key + " must give the reason " + reason[0] + " but gave " + List.of(args));
+        }
+    }
+
+    /** Runs {@code body}; if it fails, runs {@code cleanUp} before passing the failure on. */
+    private static Runnable cleaningUp(Runnable cleanUp, Runnable body) {
+        return () -> {
+            try {
+                body.run();
+            } catch (RuntimeException | AssertionError failure) {
+                cleanUp.run();
+                throw failure;
+            }
+        };
     }
 
     private static void cleanUp(LivingEntity... entities) {

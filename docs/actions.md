@@ -354,6 +354,11 @@ shows the mode Checks rolled it with: both dice under advantage or disadvantage.
 Checks lets other mods cancel a roll. A canceled roll rolled nothing, so the action fails, its cost
 is still spent, and no dice are shown.
 
+**Short rests.** A player in an encounter can't take Checks' short rest at a campfire: the fire tells
+them they are in a fight. A rest already under way breaks if they are pulled into a fight beside it.
+Once they leave the encounter, or it ends, they can rest again. Turn
+[`checks.block_short_rests`](config.md#checks) off to leave rests to Checks' own rules.
+
 Turn `checks.enabled` off, or play without Checks, and all four go back to the flat bonuses exactly,
 and initiative to the movement-speed bonus. Reel always uses its flat bonuses.
 
