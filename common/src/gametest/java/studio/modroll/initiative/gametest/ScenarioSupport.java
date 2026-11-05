@@ -53,7 +53,7 @@ final class ScenarioSupport {
      * The GameTest runs have Checks installed, so every suite whose initiative, contests or Hide assert
      * flat-bonus outcomes pins the integration off; the Checks suite pins it on.
      */
-    static final ChecksConfig CHECKS_OFF = new ChecksConfig(false);
+    static final ChecksConfig CHECKS_OFF = new ChecksConfig(false, true);
 
     private ScenarioSupport() {}
 

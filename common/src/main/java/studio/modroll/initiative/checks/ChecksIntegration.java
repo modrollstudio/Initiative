@@ -1,6 +1,8 @@
 package studio.modroll.initiative.checks;
 
+import net.minecraft.server.level.ServerPlayer;
 import studio.modroll.initiative.config.InitiativeConfig;
+import studio.modroll.initiative.encounter.EncounterManager;
 
 /**
  * Whether the optional Checks mod drives Initiative's skill rolls. Callers ask {@link #active} before
@@ -32,5 +34,20 @@ public final class ChecksIntegration {
     /** {@link #enabled} and has the skills these rolls use loaded. */
     public static boolean active() {
         return enabled() && ChecksBridge.skillsLoaded();
+    }
+
+    /** Loader wiring calls this once at mod init, after {@link #setPresent}. */
+    public static void registerRestBlocker() {
+        if (present) {
+            ChecksBridge.addRestBlocker();
+        }
+    }
+
+    /** Checks asks this every tick a player rests, so a player who leaves the encounter can rest again at once. */
+    static boolean blocksRest(ServerPlayer player) {
+        return enabled()
+                && InitiativeConfig.checks().blockShortRests()
+                && EncounterManager.encounterContaining(player.serverLevel(), player.getUUID())
+                        .isPresent();
     }
 }

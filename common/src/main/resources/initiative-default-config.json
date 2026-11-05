@@ -92,6 +92,7 @@
     "shared_visibility": true
   },
   "checks": {
-    "enabled": true
+    "enabled": true,
+    "block_short_rests": true
   }
 }

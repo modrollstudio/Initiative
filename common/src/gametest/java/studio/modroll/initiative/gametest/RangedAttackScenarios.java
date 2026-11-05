@@ -189,7 +189,7 @@ public final class RangedAttackScenarios {
      */
     public static void aFlamingArrowThatHitsSetsTheTargetAlight(GameTestHelper helper) {
         prepare(helper, RANGED, COVER_OFF, TURNS);
-        InitiativeConfig.overrideChecksForTesting(new ChecksConfig(true));
+        InitiativeConfig.overrideChecksForTesting(new ChecksConfig(true, true));
         if (!WITHOUT_CHECKS && !ChecksIntegration.present()) {
             helper.fail("the GameTest runs must have Checks installed, or be started with -PwithoutChecks");
         }

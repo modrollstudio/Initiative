@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.2.2] - 2026-11-05
+
+- **No short rests in a fight.** With Checks installed, a player in an encounter can't take a
+  short rest at a campfire, and a rest under way breaks when they are pulled into a fight. They
+  can rest again as soon as they leave the encounter. `checks.block_short_rests` (on by default)
+  turns this off.
+
+- Built and tested against Checks 0.2.0. Checks is still optional, but an installed Checks must
+  now be 0.2.0 or newer.
+
+- Built and tested against Critfall 0.2.18. From Critfall 0.2.18, armor reduces
+  rolled hits again, so a target in a fight can lose less health than the roll. Initiative still
+  works with Critfall 0.2.16 or newer.
+
 ## [0.2.1] - 2026-10-28
 
 - **Mobs and players who attack a fight from outside now join on their first hit.** That hit is

@@ -57,7 +57,9 @@ Because every participant carries Critfall's suppression flag, the automatic rea
 stays down and this driven roll is the only d20; `performAttack` applies its damage through a
 re-entry guard, so the resulting `hurt` never re-rolls. Driven damage also bypasses invulnerability
 frames, so two attackers can focus one target in the same round and both hits land full damage —
-the second is never swallowed by the first hit's i-frames.
+the second is never swallowed by the first hit's i-frames. From Critfall 0.2.18, armor reduces
+each driven hit the way it reduces a vanilla hit, so the health a target loses can be less than
+the roll.
 
 An attack consumes the action — **also on a miss** (you committed the action; the dice decided the
 outcome). With `single_attack_per_turn` off, attacks bypass the action entirely and are limited
@@ -351,6 +353,11 @@ shows the mode Checks rolled it with: both dice under advantage or disadvantage.
 
 Checks lets other mods cancel a roll. A canceled roll rolled nothing, so the action fails, its cost
 is still spent, and no dice are shown.
+
+**Short rests.** A player in an encounter can't take Checks' short rest at a campfire: the fire tells
+them they are in a fight. A rest already under way breaks if they are pulled into a fight beside it.
+Once they leave the encounter, or it ends, they can rest again. Turn
+[`checks.block_short_rests`](config.md#checks) off to leave rests to Checks' own rules.
 
 Turn `checks.enabled` off, or play without Checks, and all four go back to the flat bonuses exactly,
 and initiative to the movement-speed bonus. Reel always uses its flat bonuses.

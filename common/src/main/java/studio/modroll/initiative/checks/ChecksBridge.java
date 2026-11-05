@@ -57,6 +57,10 @@ public final class ChecksBridge {
                 stealth.result().total()));
     }
 
+    static void addRestBlocker() {
+        ChecksApi.addRestBlocker(ChecksIntegration::blocksRest);
+    }
+
     /** The modifier initiative adds: the entity's Dexterity. */
     public static int dexterityModifier(LivingEntity entity) {
         return ChecksApi.abilityModifier(entity, Ability.DEXTERITY);

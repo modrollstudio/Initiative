@@ -94,7 +94,8 @@ public final class ActionScenarios {
      * The Critfall 0.2.3 payoff: two attackers focus one target in the same round and both driven
      * hits land full damage. The target still carries i-frames from the forming hit and from the
      * first driven hit, so before 0.2.3 the second strike would have been swallowed. Driven damage
-     * now bypasses i-frames in Critfall, so the target loses exactly both rolled amounts.
+     * now bypasses i-frames in Critfall. Armor reduces each hit since Critfall 0.2.18, so the test
+     * compares the health each hit took: the same roll must take the same health twice.
      */
     public static void focusFireLandsBothDrivenHits(GameTestHelper helper) {
         prepare(helper, ACTIONS);
@@ -110,6 +111,7 @@ public final class ActionScenarios {
         ScenarioSupport.ScriptedDice dice = ScenarioSupport.forceCountedDice(true);
         try {
             AttackResult firstHit = requirePerformed(helper, first, husk, "the first focus-fire attack");
+            float afterFirst = husk.getHealth();
             if (!ActionEconomy.endTurn(helper.getLevel(), first)) {
                 helper.fail("the first attacker must be able to end its turn");
             }
@@ -117,14 +119,15 @@ public final class ActionScenarios {
             if (dice.d20Draws != 2) {
                 helper.fail("two driven attacks must roll exactly two d20s but drew " + dice.d20Draws);
             }
-            if (firstHit.damage() <= 0 || secondHit.damage() <= 0) {
-                helper.fail("both focus-fire crits must deal damage");
+            if (firstHit.damage() <= 0 || secondHit.damage() != firstHit.damage()) {
+                helper.fail("both forced max crits must deal the same damage but rolled " + firstHit.damage() + " and "
+                        + secondHit.damage());
             }
-            float expectedDrop = firstHit.damage() + secondHit.damage();
-            float actualDrop = before - husk.getHealth();
-            if (Math.abs(actualDrop - expectedDrop) > 1.0e-4) {
-                helper.fail("both driven hits must land full damage despite i-frames; expected the target" + " to lose "
-                        + expectedDrop + " but it lost " + actualDrop);
+            float firstTaken = before - afterFirst;
+            float secondTaken = afterFirst - husk.getHealth();
+            if (firstTaken <= 0 || Math.abs(secondTaken - firstTaken) > 1.0e-4) {
+                helper.fail("both driven hits must land full damage despite i-frames; the first took " + firstTaken
+                        + " and the second took " + secondTaken);
             }
         } finally {
             RollService.resetRoller();
