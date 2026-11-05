@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [0.2.2] - 2026-11-05
 
 - **No short rests in a fight.** With Checks installed, a player in an encounter can't take a
   short rest at a campfire, and a rest under way breaks when they are pulled into a fight. They
