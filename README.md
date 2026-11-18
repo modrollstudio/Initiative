@@ -41,9 +41,8 @@ covers each key, and the other pages in [docs](docs) cover each system.
 ## Building
 
 Critfall is consumed from the [Modrinth maven](https://api.modrinth.com/maven) under the
-`maven.modrinth:critfall` coordinates pinned in `gradle.properties`. Checks is pinned the same way
-(`checks_*_modrinth_id`), but while those ids are empty its jars come from CurseForge through
-[CurseMaven](https://www.cursemaven.com), pinned by the `checks_*_curseforge_*` ids.
+`maven.modrinth:critfall` coordinates pinned in `gradle.properties`. Checks comes from CurseForge
+through [CurseMaven](https://www.cursemaven.com), pinned by the `checks_*_curseforge_*` ids.
 
 ```
 ./gradlew check    # unit tests + spotless
@@ -59,4 +58,4 @@ MIT © 2026 Modroll Studio
 
 
 ## Public links to the mod
-[Curseforge](www.curseforge.com/minecraft/mc-mods/critfall-initiative)
+[Curseforge](https://www.curseforge.com/minecraft/mc-mods/critfall-initiative)
