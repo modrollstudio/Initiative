@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -18,7 +19,7 @@ import studio.modroll.initiative.ui.ActionUiSnapshot;
 
 /**
  * Membership + geometry of one encounter bubble, plus its HUD bookkeeping (id and last-sent
- * snapshot) and the acting participant's per-turn budget; world interaction lives in the manager.
+ * snapshot) and the acting participants' per-turn budgets; world interaction lives in the manager.
  */
 public final class Encounter {
 
@@ -35,12 +36,12 @@ public final class Encounter {
     private final Set<UUID> openingAttacks = new LinkedHashSet<>();
     private final Map<UUID, RangedShot> shots = new HashMap<>();
     private final TurnOrder turnOrder = new TurnOrder();
-    private final TurnBudget budget = new TurnBudget();
+    private final Map<UUID, TurnBudget> budgets = new HashMap<>();
     private final EncounterFlags flags = new EncounterFlags();
     private final Map<UUID, ActionUiSnapshot> lastActionUiSnapshots = new LinkedHashMap<>();
     private TurnOrderSnapshot lastHudSnapshot;
     private int budgetRound = -1;
-    private UUID budgetActor;
+    private UUID budgetTurn;
     private Vec3 movementAnchor;
     private boolean teleported;
 
@@ -164,24 +165,32 @@ public final class Encounter {
     }
 
     /**
-     * The acting participant's budget, reset lazily whenever the (round, actor) turn key changes.
-     * The same transition starts the actor's turn for the per-turn flags: its own dodge/disengage
-     * lapse and any Help it granted expires.
+     * The budget of a participant acting on the current turn — its holder, or a mount acting with
+     * it — made the first time it is asked for and dropped when the (round, turn) key changes. Making
+     * one starts that participant's turn for the per-turn flags: its own dodge/disengage lapse and
+     * any Help it granted expires.
      */
-    public TurnBudget budgetFor(int round, UUID actor, double movementBudget) {
-        if (round != budgetRound || !actor.equals(budgetActor)) {
+    public TurnBudget budgetFor(UUID actor, double movementBudget) {
+        int round = turnOrder.round();
+        UUID turn = turnOrder.currentTurn().orElse(null);
+        if (round != budgetRound || !Objects.equals(turn, budgetTurn)) {
             budgetRound = round;
-            budgetActor = actor;
+            budgetTurn = turn;
+            budgets.clear();
             movementAnchor = null;
             teleported = false;
-            budget.reset(movementBudget);
-            flags.beginTurn(actor);
         }
-        return budget;
+        return budgets.computeIfAbsent(actor, participant -> {
+            TurnBudget budget = new TurnBudget();
+            budget.reset(movementBudget);
+            flags.beginTurn(participant);
+            return budget;
+        });
     }
 
+    /** The turn holder's budget, as of the last time one was asked for. */
     public TurnBudget budget() {
-        return budget;
+        return budgets.getOrDefault(budgetTurn, new TurnBudget());
     }
 
     public EncounterFlags flags() {

@@ -12,7 +12,7 @@ import studio.modroll.initiative.config.TurnConfig;
 class OffTurnRestrictionTest {
 
     private static TurnConfig turns(boolean enabled, boolean restrict) {
-        return new TurnConfig(enabled, 600, 120, 20.0, 12, true, true, restrict, Set.of());
+        return new TurnConfig(enabled, 600, 120, 20.0, 12, true, true, restrict, Set.of(), true, true);
     }
 
     @Test

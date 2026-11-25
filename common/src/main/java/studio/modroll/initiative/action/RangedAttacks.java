@@ -39,7 +39,7 @@ import studio.modroll.initiative.roll.RollAnimationSync;
 
 /**
  * Ranged attacks in an encounter: a bow or crossbow shot, or a thrown trident. Firing is the attack.
- * It happens on the shooter's own turn and spends its action, the way a swing does, and what is
+ * It happens on the shooter's own turn and spends one of its attacks, the way a swing does, and what is
  * fixed at that moment — where it stood, any advantage it spent, a hostile at its elbow — is kept
  * with the projectile as a {@link RangedShot}. The arrow then flies for real, and each participant
  * it reaches gets Critfall's attack roll against its AC in place of the vanilla hit, with Critfall's
@@ -71,7 +71,7 @@ public final class RangedAttacks {
 
     /**
      * The use hooks' question for a participant player: why this use may not start, or null when it
-     * may. Drawing and firing wait for your turn and need your action; loading a crossbow is never a
+     * may. Drawing and firing wait for your turn and need an attack left; loading a crossbow is never a
      * shot, so it may happen at any time.
      */
     public static AttackStatus refusesUse(ServerLevel level, Player player, ItemStack stack) {
@@ -101,7 +101,7 @@ public final class RangedAttacks {
 
     /**
      * The spawn hooks' question: false refuses the projectile. A participant's arrow or trident is a
-     * ranged attack, so the first one of a volley must be fired on the shooter's turn with its action
+     * ranged attack, so the first one of a volley must be fired on the shooter's turn with an attack
      * left, and spends it; the rest of that volley, loosed in the same tick, rides on the same shot.
      */
     public static boolean admits(ServerLevel level, Entity entity) {
@@ -221,31 +221,32 @@ public final class RangedAttacks {
      * A mob's shot on its turn, once the target is within long range and in sight; until then it
      * keeps walking. It fires through the mob's own attack, so a stray's arrow still slows and a
      * pillager's Multishot still spreads, but aimed true: the dice decide whether it hits, so the
-     * difficulty's scatter is taken out of the aim. The shot spends the turn's action through
-     * {@link #admits} like any other.
+     * difficulty's scatter is taken out of the aim. The shot spends one of the turn's attacks through
+     * {@link #admits} like any other. True when it fired.
      */
-    static void shoot(ServerLevel level, Encounter encounter, Mob mob, LivingEntity target) {
+    static boolean shoot(ServerLevel level, Encounter encounter, Mob mob, LivingEntity target) {
         if (mob.distanceTo(target) > InitiativeConfig.actions().rangedLongRangeBlocks()
                 || !mob.hasLineOfSight(target)) {
-            return;
+            return false;
         }
         mob.lookAt(target, 360.0F, 360.0F);
         InteractionHand hand = mob.getMainHandItem().getItem() instanceof CrossbowItem
                 ? InteractionHand.MAIN_HAND
                 : InteractionHand.OFF_HAND;
         ItemStack crossbow = mob.getItemInHand(hand);
-        if (mob instanceof CrossbowAttackMob crossbowMob && crossbow.getItem() instanceof CrossbowItem item) {
-            if (!CrossbowItem.isCharged(crossbow)) {
-                crossbow.releaseUsing(level, mob, 0); // a full-length draw loads it
-            }
-            item.performShooting(level, mob, hand, crossbow, CrossbowItem.MOB_ARROW_POWER, 0.0F, target);
-            crossbowMob.onCrossbowAttackPerformed();
-            return;
-        }
         loosed = new ArrayList<>();
         try {
-            ((RangedAttackMob) mob).performRangedAttack(target, 1.0F);
-            loosed.forEach(projectile -> aimTrue(projectile, target));
+            if (mob instanceof CrossbowAttackMob crossbowMob && crossbow.getItem() instanceof CrossbowItem item) {
+                if (!CrossbowItem.isCharged(crossbow)) {
+                    crossbow.releaseUsing(level, mob, 0); // a full-length draw loads it
+                }
+                item.performShooting(level, mob, hand, crossbow, CrossbowItem.MOB_ARROW_POWER, 0.0F, target);
+                crossbowMob.onCrossbowAttackPerformed();
+            } else {
+                ((RangedAttackMob) mob).performRangedAttack(target, 1.0F);
+                loosed.forEach(projectile -> aimTrue(projectile, target));
+            }
+            return !loosed.isEmpty();
         } finally {
             loosed = null;
         }
@@ -270,27 +271,27 @@ public final class RangedAttacks {
         return stack.getItem() instanceof ProjectileWeaponItem || stack.getItem() instanceof TridentItem;
     }
 
-    /** Like the Attack action: a player's shot costs the action under {@code single_attack_per_turn}, a mob's always. */
+    /** Like the Attack action: a player's shot costs an attack under {@code single_attack_per_turn}, a mob's always. */
     private static boolean costsAction(LivingEntity shooter, ActionConfig actions) {
         return !(shooter instanceof Player) || actions.singleAttackPerTurn();
     }
 
     private static AttackStatus refusal(Encounter encounter, LivingEntity shooter) {
-        if (!shooter.getUUID().equals(encounter.turnOrder().currentTurn().orElse(null))) {
+        if (!encounter.turnOrder().isActing(shooter.getUUID())) {
             return AttackStatus.NOT_YOUR_TURN;
         }
         if (costsAction(shooter, InitiativeConfig.actions())
-                && !ActionEconomy.budgetOf(encounter, shooter).actionAvailable()) {
+                && !ActionEconomy.budgetOf(encounter, shooter).attackAvailable()) {
             return AttackStatus.NO_ACTION;
         }
         return null;
     }
 
-    /** Firing spends the action and the shooter's advantage, so both are settled here, once per volley. */
+    /** Firing spends an attack and the shooter's advantage, so both are settled here, once per volley. */
     private static RangedShot fire(ServerLevel level, Encounter encounter, LivingEntity shooter, long now) {
         ActionConfig actions = InitiativeConfig.actions();
         if (costsAction(shooter, actions)) {
-            ActionEconomy.budgetOf(encounter, shooter).useAction();
+            ActionEconomy.budgetOf(encounter, shooter).useAttack(AttackSources.perAction(shooter));
         }
         return new RangedShot(
                 shooter.getUUID(),
@@ -305,8 +306,7 @@ public final class RangedAttacks {
      * 5e's ranged attack in melee: a hostile that can see the shooter stands within reach of it.
      * Reach is the Attack action's own, measured horizontally like every reach in Initiative.
      */
-    private static boolean hostileWithinReach(
-            ServerLevel level, Encounter encounter, LivingEntity shooter, double reach) {
+    static boolean hostileWithinReach(ServerLevel level, Encounter encounter, LivingEntity shooter, double reach) {
         Encounter.Side side = encounter.side(shooter.getUUID());
         for (UUID participant : encounter.participants()) {
             if (encounter.side(participant) == side

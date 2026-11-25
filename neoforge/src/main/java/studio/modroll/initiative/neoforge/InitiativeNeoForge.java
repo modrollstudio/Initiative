@@ -67,7 +67,7 @@ public final class InitiativeNeoForge {
     public InitiativeNeoForge(IEventBus modBus) {
         Initiative.init(FMLPaths.CONFIGDIR.get());
         ChecksIntegration.setPresent(ModList.get().isLoaded(ChecksIntegration.MOD_ID));
-        ChecksIntegration.registerRestBlocker();
+        ChecksIntegration.register();
         TurnOrderSync.setSender(InitiativeNeoForge::sendTurnOrder);
         RollAnimationSync.setSender(InitiativeNeoForge::sendRollAnimation);
         ActionUiSync.setSender(InitiativeNeoForge::sendActionUi);
@@ -98,7 +98,7 @@ public final class InitiativeNeoForge {
     }
 
     private static void onRegisterPayloadHandlers(RegisterPayloadHandlersEvent event) {
-        event.registrar("1")
+        event.registrar("2")
                 .playToClient(
                         TurnOrderPayload.TYPE,
                         TurnOrderPayload.STREAM_CODEC,

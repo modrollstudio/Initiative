@@ -43,9 +43,9 @@ a player in the tick its turn begins, and vanilla's sprint boost. Dash and a won
 same scaled amount.
 
 The bonus action and reaction are tracked but nothing consumes them yet — bonus-action uses and
-opportunity attacks arrive in M4. The budget lives on the encounter, keyed by (round, actor), and
-resets lazily the moment the turn changes — there is no window where a new actor inherits stale
-budget.
+opportunity attacks arrive in M4. The budget lives on the encounter, one for each participant
+acting on the turn (a [mounted pair](turns.md#rider-and-mount) has two), and resets lazily the
+moment the turn changes — there is no window where a new actor inherits stale budget.
 
 ## The Attack action
 
@@ -64,6 +64,16 @@ the roll.
 An attack consumes the action — **also on a miss** (you committed the action; the dice decided the
 outcome). With `single_attack_per_turn` off, attacks bypass the action entirely and are limited
 only by the turn itself.
+
+### Extra Attack
+
+An Attack action can make more than one attack: a player's Extra Attack from
+[Checks](#with-checks-installed), or a mob's Multiattack from a mod
+([`Attacks`](api.md#several-attacks-attacks)). The first attack spends the action and opens the
+rest; each later attack spends one of those, with no action needed. A bow, crossbow or trident shot
+is an attack too, so a swing and then a shot, or two shots, make one Attack action. The attacks are
+spent like the action: a miss still uses one, and they don't carry over to the next turn. On the
+bar the action shows spent after the first attack, and Attack stays offered while attacks are left.
 
 **Swinging at something outside the fight.** Only participants can be driven at, so anything else
 is normally refused as `INVALID_TARGET` — but a neutral mob that no encounter owns is let through
@@ -84,9 +94,9 @@ raises it.
 
 ## Ranged attacks
 
-On your turn, firing a bow or crossbow, or throwing a trident, is an attack: it spends your
-**action**, the same one a swing spends (`single_attack_per_turn` off makes it free, as it does a
-swing). The arrow then flies for real. Each participant it reaches gets Critfall's attack roll
+On your turn, firing a bow or crossbow, or throwing a trident, is an attack: it spends one of your
+**attacks**, the same as a swing (the action, or one [Extra Attack](#extra-attack) opened;
+`single_attack_per_turn` off makes it free, as it does a swing). The arrow then flies for real. Each participant it reaches gets Critfall's attack roll
 against its AC — `RollService.performAttack` with a projectile `AttackContext` (thrown for a
 trident), the launcher as the weapon — in place of the vanilla hit, and on a hit Critfall's damage.
 A miss flies on past the target, through Critfall 0.2.16's own missed-shot handling, and may still
@@ -95,7 +105,7 @@ that reaches a participant rolls on its own. An arrow fired at anything outside 
 untouched, as a swing at it would be.
 
 - **Your turn only.** Drawing a bow or trident, and firing a loaded crossbow, are refused off your
-  turn and once your action is spent. Loading a crossbow is not a shot and works any time. A draw
+  turn and once your attacks are spent. Loading a crossbow is not a shot and works any time. A draw
   still held when your turn passes is lowered, so it can't be released late.
 - **Ranged attack in melee.** If a hostile participant that can see you stands within
   `attack_reach_blocks` of you as you fire, the shot rolls with **disadvantage** (5e).
@@ -359,8 +369,15 @@ them they are in a fight. A rest already under way breaks if they are pulled int
 Once they leave the encounter, or it ends, they can rest again. Turn
 [`checks.block_short_rests`](config.md#checks) off to leave rests to Checks' own rules.
 
+**Extra Attack.** A player whose Checks class has Extra Attack at their level (Checks' defaults, from
+SRD 5.2: Fighter at 5, 11 and 20; Barbarian, Monk, Paladin and Ranger at 5) makes that many attacks
+with one Attack action;
+see [Extra Attack](#extra-attack). Turn [`checks.extra_attack`](config.md#checks) off for one attack
+per action whatever the class.
+
 Turn `checks.enabled` off, or play without Checks, and all four go back to the flat bonuses exactly,
-and initiative to the movement-speed bonus. Reel always uses its flat bonuses.
+initiative to the movement-speed bonus, and every player to one attack. Reel always uses its flat
+bonuses.
 
 ## Cover
 
@@ -436,16 +453,23 @@ Teleports into another dimension are not refused.
 
 ## Mob turns
 
-M3 mob turns are deliberately simple: the acting mob is unfrozen (M2b), walks under the same
+Initiative's own mob turn is deliberately simple: the acting mob is unfrozen, walks under the same
 movement clamp — and freezes in place once its budget is gone — and attacks the nearest living
-enemy participant through the API as soon as it is within melee reach. Its action is consumed
-regardless of `single_attack_per_turn` (that flag is player-facing). Full mob tactics come later.
+enemy participant through the API as soon as it is within melee reach. Its attacks always come out
+of the Attack action, regardless of `single_attack_per_turn` (that flag is for players). A mob
+with several attacks ([`Attacks`](api.md#several-attacks-attacks)) makes them all,
+`mob_attack_spacing_ticks` apart so each roll shows; with one, it makes one, as before.
 
 A mob that shoots — a skeleton, stray, pillager or drowned with a bow, crossbow or trident in hand —
-fires one [ranged attack](#ranged-attacks) instead, as soon as its target is within long range and
+fires a [ranged attack](#ranged-attacks) instead, as soon as its target is within long range and
 in sight. It fires through its own attack, so a stray's arrow still slows and a pillager loads its
 crossbow first, but aimed straight at the target, since the roll decides whether it hits. Any arrow
-its own AI looses after that is refused: the action is spent.
+its own AI looses after that is refused: its attacks are spent.
+
+A mod can take over its own mobs' turns with a turn handler, which takes the mod's own actions,
+bonus actions and reactions through the same gate as a player's; see
+[mob turns in the API](api.md#mob-turns). A mob steered by a rider shares the rider's turn; see
+[rider and mount](turns.md#rider-and-mount).
 
 ## Turn end
 
@@ -453,8 +477,9 @@ A turn ends when any of these fires:
 
 - **Explicitly**: the acting player clicks End Turn in the [turn UI](ui.md), or runs
   `/initiative endturn`. Since M8 this is the normal way a turn ends.
-- **Spent**: a mob's turn ends once its action is spent (`mob_end_turn_when_spent`, default on — a
-  mob has no UI to click). A player's turn does the same only with `end_turn_when_spent` on, which
+- **Spent**: a mob's turn ends once its action and its attacks are spent
+  (`mob_end_turn_when_spent`, default on — a mob has no UI to click). A mob on a mod's turn handler
+  ends its turn when the handler says so. A player's turn does the same only with `end_turn_when_spent` on, which
   defaults **off** since M8: a spent turn stays yours until you end it.
 - **Timeout**: the M2a `turn_timeout_ticks` safety net, shown as a countdown in the UI.
 
@@ -495,6 +520,7 @@ result's `RollDetail`. Initiative emits no hint line of its own.
   "attack_reach_blocks": 4.0,
   "end_turn_when_spent": false,
   "mob_end_turn_when_spent": true,
+  "mob_attack_spacing_ticks": 20,
   "dash": true,
   "disengage": true,
   "dodge": true,
@@ -527,10 +553,11 @@ result's `RollDetail`. Initiative emits no hint line of its own.
 | `movement_budget_blocks` | number ≥ 0 | Blocks of movement per turn at normal walking speed (default 10). 0 = no movement on your turn. |
 | `movement_scales_with_speed` | boolean | Scales the budget by movement speed (Swiftness more, Slowness fewer). Off = the flat budget for everyone. |
 | `teleports_cost_movement` | boolean | A teleport on your turn is movement: refused past what is left, charged otherwise. Off = not checked. |
-| `single_attack_per_turn` | boolean | Attacks consume the one action per turn. Off = attacks don't touch the action (and turns never auto-end from attacking). |
+| `single_attack_per_turn` | boolean | Attacks consume the one action per turn, or the [Extra Attacks](#extra-attack) it opened. Off = attacks don't touch the action (and turns never auto-end from attacking). |
 | `attack_reach_blocks` | number ≥ 0 | How far an attack reaches (horizontal centre-to-centre, default 4). Beyond it: `OUT_OF_REACH`, and the UI offers no such target. |
 | `end_turn_when_spent` | boolean | A player's turn auto-ends when spent (see above). Default off: the player ends the turn deliberately. |
-| `mob_end_turn_when_spent` | boolean | A mob's turn auto-ends once its action is spent. Default on. Off = mob turns end only on the timeout. |
+| `mob_end_turn_when_spent` | boolean | A mob's turn auto-ends once its action and its attacks are spent. Default on. Off = mob turns end only on the timeout. |
+| `mob_attack_spacing_ticks` | integer ≥ 0 | Ticks between a mob's attacks when it makes several on Initiative's own turn (default 20, the default roll animation's length). |
 | `dash` | boolean | Toggle for the Dash action. Off = Dash unavailable. |
 | `disengage` | boolean | Toggle for the Disengage action. Off = Disengage unavailable. |
 | `dodge` | boolean | Toggle for the Dodge action. Off = Dodge unavailable and no attack rolls with dodge disadvantage. |

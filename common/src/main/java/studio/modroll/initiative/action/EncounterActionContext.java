@@ -9,6 +9,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
+import studio.modroll.critfall.api.AttackContext;
 import studio.modroll.critfall.api.combat.AttackResult;
 import studio.modroll.critfall.api.combat.ContestResult;
 import studio.modroll.initiative.api.ActionContext;
@@ -86,6 +87,21 @@ record EncounterActionContext(
     @Override
     public void showRoll(ContestResult result, LivingEntity opponent) {
         RollAnimationSync.play(actor, opponent, RollAnimation.contest(result, nameOf(actor), nameOf(opponent)));
+    }
+
+    /** A miss that rolled nothing has no dice to show. */
+    @Override
+    public AttackResult attack(LivingEntity target, AttackContext attack) {
+        AttackResult result = ActionEconomy.attackFor(level, encounter, actor, target, attack);
+        if (result.natural() > 0) {
+            showRoll(result, target);
+        }
+        return result;
+    }
+
+    @Override
+    public void launch(LivingEntity target, Vec3 motion) {
+        Launches.launch(target, motion);
     }
 
     private static String nameOf(LivingEntity entity) {

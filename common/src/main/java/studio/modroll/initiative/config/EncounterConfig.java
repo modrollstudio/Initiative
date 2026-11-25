@@ -14,7 +14,8 @@ public record EncounterConfig(
         boolean requireLineOfSight,
         boolean endWhenAllHidden,
         double triggerRadius,
-        double leaveRadius) {
+        double leaveRadius,
+        boolean surprise) {
 
     public static EncounterConfig fromJson(ConfigSource source) {
         ConfigSection encounters = source.section("encounters");
@@ -35,6 +36,7 @@ public record EncounterConfig(
                 encounters.read("require_line_of_sight", BOOLEAN),
                 encounters.read("end_when_all_hidden", BOOLEAN),
                 triggerRadius,
-                leaveRadius);
+                leaveRadius,
+                encounters.read("surprise", BOOLEAN));
     }
 }

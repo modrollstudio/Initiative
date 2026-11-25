@@ -53,4 +53,48 @@ class TurnBudgetTest {
         assertEquals(8.0, budget.movementRemaining(), 1e-9);
         assertFalse(budget.movementExhausted());
     }
+
+    @Test
+    void theFirstAttackSpendsTheActionAndOpensTheRest() {
+        TurnBudget budget = new TurnBudget();
+        budget.reset(6.0);
+        assertTrue(budget.attackAvailable());
+        budget.useAttack(3);
+        assertFalse(budget.actionAvailable());
+        assertEquals(2, budget.attacksLeft());
+        budget.useAttack(3);
+        assertEquals(1, budget.attacksLeft());
+        assertTrue(budget.attackAvailable());
+        budget.useAttack(3);
+        assertEquals(0, budget.attacksLeft());
+        assertFalse(budget.attackAvailable());
+    }
+
+    @Test
+    void oneAttackSpendsTheActionAndLeavesNoneOver() {
+        TurnBudget budget = new TurnBudget();
+        budget.reset(6.0);
+        budget.useAttack(1);
+        assertFalse(budget.actionAvailable());
+        assertEquals(0, budget.attacksLeft());
+        assertFalse(budget.attackAvailable());
+    }
+
+    @Test
+    void theAttackPoolEmptiesEachTurn() {
+        TurnBudget budget = new TurnBudget();
+        budget.reset(6.0);
+        budget.useAttack(2);
+        budget.reset(6.0);
+        assertEquals(0, budget.attacksLeft());
+        assertTrue(budget.actionAvailable());
+    }
+
+    @Test
+    void anActionSpentElsewhereClosesTheAttack() {
+        TurnBudget budget = new TurnBudget();
+        budget.reset(6.0);
+        budget.useAction();
+        assertFalse(budget.attackAvailable());
+    }
 }

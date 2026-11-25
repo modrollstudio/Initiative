@@ -14,14 +14,18 @@ import net.minecraft.world.phys.Vec3;
 import studio.modroll.critfall.api.AttackContext;
 import studio.modroll.critfall.api.ContestContext;
 import studio.modroll.critfall.api.RollService;
+import studio.modroll.critfall.api.combat.AttackOutcome;
 import studio.modroll.critfall.api.combat.AttackResult;
 import studio.modroll.critfall.api.combat.ContestResult;
 import studio.modroll.critfall.api.dice.RollMode;
+import studio.modroll.initiative.Initiative;
 import studio.modroll.initiative.api.ActionContext;
+import studio.modroll.initiative.api.ActionCost;
 import studio.modroll.initiative.api.ActionRegistry;
 import studio.modroll.initiative.api.ActionRequest;
 import studio.modroll.initiative.api.ActionResult;
 import studio.modroll.initiative.api.ActionStatus;
+import studio.modroll.initiative.api.MobTurn;
 import studio.modroll.initiative.checks.ChecksBridge;
 import studio.modroll.initiative.checks.ChecksIntegration;
 import studio.modroll.initiative.config.ActionConfig;
@@ -82,14 +86,11 @@ public final class ActionEconomy {
     private ActionEconomy() {}
 
     /**
-     * The acting participant's budget. Its movement is the participant's own speed-scaled budget,
+     * An acting participant's budget. Its movement is the participant's own speed-scaled budget,
      * fixed as the turn starts; a grappled participant's turn starts with none.
      */
     public static TurnBudget budgetOf(Encounter encounter, LivingEntity participant) {
-        return encounter.budgetFor(
-                encounter.turnOrder().round(),
-                participant.getUUID(),
-                Grapples.movementBudgetFor(encounter, participant));
+        return encounter.budgetFor(participant.getUUID(), Grapples.movementBudgetFor(encounter, participant));
     }
 
     public static boolean active() {
@@ -191,6 +192,40 @@ public final class ActionEconomy {
         AttackResult result = rollAttack(level, encounter, attacker, target, Cover.acBonus(tier, cover));
         context.showRoll(result, target);
         return ActionResult.attacked(result);
+    }
+
+    /**
+     * A mod action's attack: the Attack action's roll, its mode combined with the attack's own the 5e
+     * way, and a projectile or thrown attack's range rules. What can't be attacked at all — past long
+     * range, or into total cover that blocks attacks — rolls nothing and misses.
+     */
+    static AttackResult attackFor(
+            ServerLevel level, Encounter encounter, LivingEntity attacker, LivingEntity target, AttackContext attack) {
+        ActionConfig actions = InitiativeConfig.actions();
+        CoverConfig cover = InitiativeConfig.cover();
+        Cover.Tier tier = Cover.against(level, attacker, target, cover);
+        double range = attacker.position().distanceTo(target.position());
+        if ((attack.isRanged() && range > actions.rangedLongRangeBlocks())
+                || (tier == Cover.Tier.TOTAL && cover.totalCoverBlocksAttack())) {
+            return new AttackResult(AttackOutcome.MISS, 0, 0, 0, 0);
+        }
+        boolean advantage = spendAttackerAdvantage(encounter, actions, attacker) || attack.mode() == RollMode.ADVANTAGE;
+        boolean disadvantage = attack.mode() == RollMode.DISADVANTAGE
+                || targetImposesDisadvantage(encounter, actions, target)
+                || attack.isRanged()
+                        && (range > actions.rangedNormalRangeBlocks()
+                                || RangedAttacks.hostileWithinReach(
+                                        level, encounter, attacker, actions.attackReachBlocks()));
+        AttackContext rolled = attack.withMode(resolveMode(advantage, disadvantage));
+        int acBonus = Cover.acBonus(tier, cover);
+        if (acBonus != 0) {
+            rolled = rolled.withDefenderAcBonus(attack.defenderAcBonus() + acBonus);
+        }
+        AttackResult result = RollService.performAttack(attacker, target, rolled);
+        if (result.isHit()) {
+            encounter.flags().breakHidden(target.getUUID());
+        }
+        return result;
     }
 
     /**
@@ -368,7 +403,11 @@ public final class ActionEconomy {
         return nearest;
     }
 
-    /** Per-tick reconcile for the acting participant: budget, movement clamp, mob turn, auto-end. */
+    /**
+     * Per-tick reconcile for the acting participant and a mount acting with it: budget, movement
+     * clamp, mob turn, auto-end. The pair is one body, so it moves once, measured on the mount, and
+     * the turn ends when both are done.
+     */
     public static void tick(ServerLevel level, Encounter encounter) {
         if (!active()) {
             return;
@@ -377,17 +416,57 @@ public final class ActionEconomy {
         if (current == null || !(level.getEntity(current) instanceof LivingEntity actor) || !actor.isAlive()) {
             return;
         }
-        ActionConfig actions = InitiativeConfig.actions();
         RangedAttacks.forgetLanded(level, encounter);
         Grapples.reconcile(level, encounter);
         PassivePerception.revealHidersSpottedBy(encounter, actor);
-        TurnBudget budget = budgetOf(encounter, actor);
-        trackMovement(level, encounter, actor, budget);
-        if (actor instanceof Mob mob) {
-            driveMobTurn(level, encounter, mob, budget);
+        LivingEntity mount = actingMount(level, encounter, current);
+        LivingEntity mover = mount != null ? mount : actor;
+        trackMovement(level, encounter, mover, budgetOf(encounter, mover));
+        boolean done = takeTurn(level, encounter, actor, false);
+        if (mount != null) {
+            done = takeTurn(level, encounter, mount, done) && done;
         }
-        if (turnSpent(actor, budget, actions)) {
+        if (done) {
             encounter.turnOrder().endTurn();
+        }
+    }
+
+    private static LivingEntity actingMount(ServerLevel level, Encounter encounter, UUID rider) {
+        UUID mount = encounter.turnOrder().mountOf(rider).orElse(null);
+        return mount != null && level.getEntity(mount) instanceof LivingEntity entity && entity.isAlive()
+                ? entity
+                : null;
+    }
+
+    /**
+     * One tick of one participant's part in the turn; true once it is done. A mount on Initiative's
+     * own turn is done once its rider is, since it can't move by itself.
+     */
+    private static boolean takeTurn(
+            ServerLevel level, Encounter encounter, LivingEntity participant, boolean riderDone) {
+        TurnBudget budget = budgetOf(encounter, participant);
+        int tick = budget.nextTick();
+        MobTurn handler = participant instanceof Mob mob ? CustomMobTurns.handlerFor(mob) : null;
+        if (handler != null) {
+            if (!budget.done()
+                    && runHandler((Mob) participant, handler, new MobTurn.Turn(tick, budget.movementRemaining()))) {
+                budget.finish();
+            }
+            return budget.done();
+        }
+        if (participant instanceof Mob mob) {
+            driveMobTurn(level, encounter, mob, budget, tick);
+        }
+        return riderDone || turnSpent(participant, budget, InitiativeConfig.actions());
+    }
+
+    /** A handler that throws ends its turn, so one broken mod can't stall the fight. */
+    private static boolean runHandler(Mob mob, MobTurn handler, MobTurn.Turn turn) {
+        try {
+            return handler.tick(mob, turn);
+        } catch (RuntimeException e) {
+            Initiative.LOG.error("A mob turn handler failed on {}; its turn ends", mob, e);
+            return true;
         }
     }
 
@@ -404,7 +483,7 @@ public final class ActionEconomy {
         Vec3 pos = actor.position();
         Vec3 anchor = encounter.movementAnchor();
         boolean teleported = encounter.consumeTeleport();
-        if (anchor == null || (actor.hurtTime > 0 && !teleported)) {
+        if (anchor == null || (actor.hurtTime > 0 && !teleported) || Launches.inFlight(actor)) {
             encounter.setMovementAnchor(pos);
             return;
         }
@@ -425,26 +504,28 @@ public final class ActionEconomy {
     }
 
     /**
-     * The mob turn: one driven attack on the nearest enemy — a shot once it is in range and sight for
-     * a mob with a bow, crossbow or trident in hand, a melee swing once it is in reach for any other.
+     * Initiative's own mob turn: the Attack action's attacks on the nearest enemy — a shot once it is
+     * in range and sight for a mob with a bow, crossbow or trident in hand, a melee swing once it is
+     * in reach for any other. A mob's attacks always come from the pool, whatever
+     * {@code single_attack_per_turn} says, and wait {@code mob_attack_spacing_ticks} between them so
+     * each roll shows.
      */
-    private static void driveMobTurn(ServerLevel level, Encounter encounter, Mob mob, TurnBudget budget) {
-        if (!budget.actionAvailable()) {
+    private static void driveMobTurn(ServerLevel level, Encounter encounter, Mob mob, TurnBudget budget, int tick) {
+        if (!budget.attackAvailable() || !budget.attackReadyAt(tick)) {
             return;
         }
         LivingEntity target = nearestEnemy(level, encounter, mob);
         if (target == null) {
             return;
         }
-        if (RangedAttacks.shootsOnItsTurn(mob)) {
-            RangedAttacks.shoot(level, encounter, mob, target);
-            return;
-        }
-        if (!mob.isWithinMeleeAttackRange(target)) {
-            return;
-        }
-        if (attack(level, mob, target).status() == AttackStatus.PERFORMED) {
-            budget.useAction();
+        boolean attacked = RangedAttacks.shootsOnItsTurn(mob)
+                ? RangedAttacks.shoot(level, encounter, mob, target)
+                : mob.isWithinMeleeAttackRange(target)
+                        && ActionGate.invoke(
+                                        level, mob, BuiltinActions.ATTACK, ActionRequest.of(target), ActionCost.ATTACK)
+                                .isPerformed();
+        if (attacked) {
+            budget.holdAttacksUntil(tick + InitiativeConfig.actions().mobAttackSpacingTicks());
         }
     }
 
@@ -470,12 +551,12 @@ public final class ActionEconomy {
     }
 
     /**
-     * Mobs are done once their action is spent; players keep the turn while movement remains. A
-     * player ends the turn by clicking End Turn, so the player half defaults off — auto-end is
-     * convenience there, while a mob has no UI to click and keeps its own toggle on.
+     * Mobs are done once their action and its attacks are spent; players keep the turn while movement
+     * remains. A player ends the turn by clicking End Turn, so the player half defaults off — auto-end
+     * is convenience there, while a mob has no UI to click and keeps its own toggle on.
      */
     static boolean turnSpent(LivingEntity actor, TurnBudget budget, ActionConfig actions) {
-        if (budget.actionAvailable()) {
+        if (budget.attackAvailable()) {
             return false;
         }
         if (actor instanceof Player) {
@@ -521,16 +602,20 @@ public final class ActionEconomy {
         return true;
     }
 
-    /** Lets the freeze hold the acting mob in place once its movement budget is gone. */
+    /** Lets the freeze hold the acting mob, or the acting pair, in place once the mover's budget is gone. */
     public static boolean actingMovementExhausted(ServerLevel level, Encounter encounter) {
         if (!active()) {
             return false;
         }
         UUID current = encounter.turnOrder().currentTurn().orElse(null);
-        if (current == null || !(level.getEntity(current) instanceof LivingEntity actor)) {
+        if (current == null) {
             return false;
         }
-        return budgetOf(encounter, actor).movementExhausted();
+        UUID mover = encounter.turnOrder().mountOf(current).orElse(current);
+        if (!(level.getEntity(mover) instanceof LivingEntity entity)) {
+            return false;
+        }
+        return budgetOf(encounter, entity).movementExhausted();
     }
 
     public static void sendRejection(Player player, AttackStatus status) {

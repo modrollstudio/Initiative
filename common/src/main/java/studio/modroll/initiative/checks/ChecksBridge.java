@@ -70,6 +70,10 @@ public final class ChecksBridge {
         return ChecksApi.passiveScore(watcher, skill(PERCEPTION));
     }
 
+    static int attacksPerAction(LivingEntity creature) {
+        return ChecksApi.attacksPerAction(creature);
+    }
+
     private static Skill athleticsOrAcrobatics(LivingEntity entity) {
         Skill athletics = skill(ATHLETICS);
         Skill acrobatics = skill(ACROBATICS);

@@ -45,7 +45,7 @@ public final class BuiltinActions {
         ActionRegistry.register(Action.builder(ATTACK)
                 // The attack is the one action whose cost is a config decision: with
                 // single_attack_per_turn off it is free and limited only by the turn itself.
-                .cost(() -> config().singleAttackPerTurn() ? ActionCost.ACTION : ActionCost.FREE)
+                .cost(() -> config().singleAttackPerTurn() ? ActionCost.ATTACK : ActionCost.FREE)
                 .targeting(ActionTargeting.entity(Side.ENEMY, () -> config().attackReachBlocks()))
                 .effect(ActionEconomy::performAttack)
                 .build());

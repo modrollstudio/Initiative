@@ -92,7 +92,7 @@ public final class Concealment {
     }
 
     public static boolean suppressesTarget(UUID target) {
-        return (!CONCEALED.isEmpty() || !LOST.isEmpty()) && isConcealed(target) && active(InitiativeConfig.actions());
+        return (!CONCEALED.isEmpty() || !LOST.isEmpty()) && isConcealed(target) && active();
     }
 
     /**
@@ -100,7 +100,19 @@ public final class Concealment {
      * all: no mob turn picks it, and no reactor can see it leave its reach.
      */
     public static boolean hides(Encounter encounter, UUID participant) {
-        return active(InitiativeConfig.actions()) && encounter.flags().isHidden(participant);
+        return active() && encounter.flags().isHidden(participant);
+    }
+
+    /** A hidden mob: left off the players' turn strip, acting marker and target lists. */
+    public static boolean hiddenFromPlayers(Encounter encounter, UUID participant) {
+        return encounter.side(participant) == Encounter.Side.HOSTILE && hides(encounter, participant);
+    }
+
+    public static boolean hidden(LivingEntity creature) {
+        return creature.level() instanceof ServerLevel level
+                && EncounterManager.encounterContaining(level, creature.getUUID())
+                        .map(encounter -> hides(encounter, creature.getUUID()))
+                        .orElse(false);
     }
 
     /** Every player in the fight is hiding, which leaves the mobs nobody to fight. */
@@ -147,7 +159,7 @@ public final class Concealment {
             return;
         }
         double radius = InitiativeConfig.encounters().leaveRadius();
-        boolean active = active(InitiativeConfig.actions());
+        boolean active = active();
         LOST.entrySet()
                 .removeIf(entry -> entry.getValue().dimension().equals(level.dimension())
                         && (!active || !stillLost(level, entry.getKey(), entry.getValue(), radius)));
@@ -183,7 +195,7 @@ public final class Concealment {
      * broken hidden state, a removed participant or a flipped config flag all heal within one tick.
      */
     public static void reconcile(ServerLevel level, Encounter encounter) {
-        boolean active = active(InitiativeConfig.actions());
+        boolean active = active();
         for (UUID participant : encounter.participants()) {
             if (active && encounter.flags().isHidden(participant)) {
                 conceal(participant);
@@ -203,14 +215,20 @@ public final class Concealment {
 
     /**
      * Whether the encounter's "a neutral that lost its target has calmed down" leave path must stand
-     * down: while someone is hiding it was concealment that took the target, not the mob losing
-     * interest, and dropping it would eject it from the fight the hider is still in.
+     * down: while a player is hiding it was concealment that took the target, not the mob losing
+     * interest, and dropping it would eject it from the fight the hider is still in. A hidden mob
+     * takes nobody's target, so it holds nobody.
      */
     public static boolean holdsNeutralsInTheFight(Encounter encounter) {
-        return active(InitiativeConfig.actions()) && encounter.flags().anyHidden();
+        return active()
+                && encounter.participants().stream()
+                        .anyMatch(participant -> encounter.side(participant) == Encounter.Side.PLAYER
+                                && encounter.flags().isHidden(participant));
     }
 
-    private static boolean active(ActionConfig actions) {
+    /** Hiding keeps a participant out of its foes' sight only while Hide and its targeting rule are both on. */
+    public static boolean active() {
+        ActionConfig actions = InitiativeConfig.actions();
         return actions.hide() && actions.hideSuppressesTargeting();
     }
 

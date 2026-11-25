@@ -1,6 +1,8 @@
 package studio.modroll.initiative.checks;
 
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.LivingEntity;
+import studio.modroll.initiative.api.Attacks;
 import studio.modroll.initiative.config.InitiativeConfig;
 import studio.modroll.initiative.encounter.EncounterManager;
 
@@ -37,10 +39,16 @@ public final class ChecksIntegration {
     }
 
     /** Loader wiring calls this once at mod init, after {@link #setPresent}. */
-    public static void registerRestBlocker() {
+    public static void register() {
         if (present) {
             ChecksBridge.addRestBlocker();
+            Attacks.register(ChecksIntegration::attacksPerAction);
         }
+    }
+
+    /** Extra Attack: a player's attacks from their class and level, while the integration and the feature are on. */
+    static int attacksPerAction(LivingEntity creature) {
+        return enabled() && InitiativeConfig.checks().extraAttack() ? ChecksBridge.attacksPerAction(creature) : 1;
     }
 
     /** Checks asks this every tick a player rests, so a player who leaves the encounter can rest again at once. */

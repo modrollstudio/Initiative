@@ -29,9 +29,9 @@ import studio.modroll.initiative.turn.TurnOrder;
 public final class FreezeScenarios {
 
     private static final EncounterConfig TIGHT_BUBBLE =
-            new EncounterConfig(true, true, true, false, true, true, true, true, 1.0, 8.0);
+            new EncounterConfig(true, true, true, false, true, true, true, true, 1.0, 8.0, true);
     private static final TurnConfig FREEZE_ON =
-            new TurnConfig(true, 1000, 1000, 20.0, 12, true, false, false, Set.of());
+            new TurnConfig(true, 1000, 1000, 20.0, 12, true, false, false, Set.of(), true, true);
 
     private FreezeScenarios() {}
 
@@ -177,7 +177,9 @@ public final class FreezeScenarios {
     }
 
     public static void excludedTypeIsNeverFrozenButKeepsItsTurnSlot(GameTestHelper helper) {
-        prepare(helper, new TurnConfig(true, 1000, 1000, 20.0, 12, true, false, false, Set.of("minecraft:husk")));
+        prepare(
+                helper,
+                new TurnConfig(true, 1000, 1000, 20.0, 12, true, false, false, Set.of("minecraft:husk"), true, true));
         Player player = ScenarioSupport.spawnPlayer(helper, 1, 1);
         Husk husk = ScenarioSupport.spawnHuskWithAi(helper, 3, 3);
         ScenarioSupport.formEncounter(helper, player, List.of(20, 1), husk);
@@ -233,7 +235,7 @@ public final class FreezeScenarios {
                 .thenExecuteAfter(2, () -> {
                     requireFrozen(helper, husk, "the husk while the freeze flag is on");
                     InitiativeConfig.overrideTurnsForTesting(
-                            new TurnConfig(true, 1000, 1000, 20.0, 12, false, false, false, Set.of()));
+                            new TurnConfig(true, 1000, 1000, 20.0, 12, false, false, false, Set.of(), true, true));
                 })
                 .thenExecuteAfter(2, () -> {
                     if (AiFreeze.isFrozen(husk.getUUID())) {

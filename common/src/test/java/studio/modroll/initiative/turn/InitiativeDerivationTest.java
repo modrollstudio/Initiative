@@ -4,11 +4,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.Set;
 import org.junit.jupiter.api.Test;
+import studio.modroll.critfall.api.dice.DiceExpression;
 import studio.modroll.initiative.config.TurnConfig;
 
 class InitiativeDerivationTest {
 
-    private static final TurnConfig CONFIG = new TurnConfig(true, 100, 100, 20.0, 12, true, true, false, Set.of());
+    private static final TurnConfig CONFIG =
+            new TurnConfig(true, 100, 100, 20.0, 12, true, true, false, Set.of(), true, true);
 
     @Test
     void scalesMovementSpeedAndFloors() {
@@ -26,5 +28,11 @@ class InitiativeDerivationTest {
     void neverGoesBelowZero() {
         assertEquals(0, InitiativeDerivation.bonus(-1.0, CONFIG));
         assertEquals(0, InitiativeDerivation.bonus(0.0, CONFIG));
+    }
+
+    @Test
+    void aSurprisedJoinerKeepsTheLowerOfTwoD20s() {
+        assertEquals(DiceExpression.parse("2d20kl1"), InitiativeDerivation.dice(true));
+        assertEquals(DiceExpression.parse("1d20"), InitiativeDerivation.dice(false));
     }
 }

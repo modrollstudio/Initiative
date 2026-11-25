@@ -22,6 +22,7 @@ class EncounterConfigTest {
                     "pull_nearby_players": false,
                     "require_line_of_sight": false,
                     "end_when_all_hidden": false,
+                    "surprise": false,
                     "trigger_radius": %s,
                     "leave_radius": %s
                 }}""".formatted(triggerRadius, leaveRadius);
@@ -39,6 +40,7 @@ class EncounterConfigTest {
         assertFalse(config.pullNearbyPlayers());
         assertFalse(config.requireLineOfSight());
         assertFalse(config.endWhenAllHidden());
+        assertFalse(config.surprise());
         assertEquals(12.0, config.triggerRadius());
         assertEquals(20.0, config.leaveRadius());
         assertNothingReported(source);
@@ -185,5 +187,13 @@ class EncounterConfigTest {
         assertEquals(12.0, config.triggerRadius());
         assertEquals(20.0, config.leaveRadius());
         assertReported(source, ConfigIssue.Kind.INVALID, "encounters.leave_radius");
+    }
+
+    /** A file from before ambushes catches its players by surprise, as a fresh install does. */
+    @Test
+    void missingSurpriseKeyFallsBackToOn() {
+        ConfigSource source = source(complete("12.0", "20.0").replace("\"surprise\": false,\n", ""));
+        assertTrue(EncounterConfig.fromJson(source).surprise());
+        assertReported(source, ConfigIssue.Kind.MISSING, "encounters.surprise");
     }
 }
