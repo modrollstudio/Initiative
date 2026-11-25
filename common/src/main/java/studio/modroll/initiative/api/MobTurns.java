@@ -22,6 +22,15 @@ public final class MobTurns {
         CustomMobTurns.register(handles, turn);
     }
 
+    /**
+     * Whether registered handlers will run: {@code turns.enabled}, {@code turns.custom_mob_turns} and
+     * {@code actions.enabled} all on. Initiative reads its config at its own mod construction, so ask
+     * in play, not while mods are constructed.
+     */
+    public static boolean enabled() {
+        return CustomMobTurns.enabled();
+    }
+
     /** A mob {@code hides} matches joins a fight hidden: with Checks on a Stealth roll, without as it stands. */
     public static void joinsHidden(Predicate<Mob> hides) {
         CustomMobTurns.joinsHidden(hides);
