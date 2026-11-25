@@ -230,6 +230,16 @@ round, and a second one that round is refused `NO_REACTION`.
 Built in action ids a handler may invoke, all in the `initiative` namespace: `attack`, `dash`,
 `disengage`, `dodge`, `help`, `hide`, `shove`, `grapple`, `end_turn`.
 
+### Whether handlers run: `MobTurns.enabled()`
+
+```java
+boolean ownTurns = MobTurns.enabled();
+```
+
+Whether handlers will run: true only with `turns.enabled`, `turns.custom_mob_turns` and
+`actions.enabled` all on. Otherwise no handler runs. It reads the live config, so ask in play, such
+as on a mob's tick, not during mod construction, when Initiative may not have loaded its config yet.
+
 ### Hidden mobs: `joinsHidden`, `ambush`, `hidden`
 
 ```java
