@@ -1,5 +1,7 @@
 package studio.modroll.initiative.turn;
 
+import studio.modroll.critfall.api.dice.DiceExpression;
+import studio.modroll.critfall.api.dice.RollMode;
 import studio.modroll.initiative.config.TurnConfig;
 
 /**
@@ -14,5 +16,14 @@ public final class InitiativeDerivation {
     public static int bonus(double movementSpeed, TurnConfig config) {
         int raw = (int) Math.floor(movementSpeed * config.initiativeBonusPerSpeed());
         return Math.clamp(raw, 0, config.initiativeMaxBonus());
+    }
+
+    /** Surprise as SRD 5.2 has it: disadvantage on initiative, no lost turn. */
+    public static DiceExpression dice(boolean surprised) {
+        return mode(surprised).d20Expression();
+    }
+
+    public static RollMode mode(boolean surprised) {
+        return surprised ? RollMode.DISADVANTAGE : RollMode.NORMAL;
     }
 }

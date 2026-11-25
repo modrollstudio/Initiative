@@ -26,8 +26,9 @@ import studio.modroll.initiative.encounter.EncounterManager;
 public final class MovementScenarios {
 
     private static final EncounterConfig TIGHT_BUBBLE =
-            new EncounterConfig(true, true, true, false, true, true, true, true, 1.0, 8.0);
-    private static final TurnConfig TURNS = new TurnConfig(true, 1000, 1000, 20.0, 12, false, false, true, Set.of());
+            new EncounterConfig(true, true, true, false, true, true, true, true, 1.0, 8.0, true);
+    private static final TurnConfig TURNS =
+            new TurnConfig(true, 1000, 1000, 20.0, 12, false, false, true, Set.of(), true, true);
 
     private static final List<Integer> PLAYER_FIRST = List.of(20, 1);
     private static final List<Integer> HUSK_FIRST = List.of(1, 20);

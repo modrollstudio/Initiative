@@ -22,6 +22,7 @@ class ActionConfigTest {
                     "attack_reach_blocks": 3.0,
                     "end_turn_when_spent": false,
                     "mob_end_turn_when_spent": true,
+                    "mob_attack_spacing_ticks": 7,
                     "dash": true,
                     "disengage": true,
                     "dodge": true,
@@ -59,6 +60,7 @@ class ActionConfigTest {
         assertEquals(3.0, config.attackReachBlocks());
         assertFalse(config.endTurnWhenSpent());
         assertTrue(config.mobEndTurnWhenSpent());
+        assertEquals(7, config.mobAttackSpacingTicks());
         assertTrue(config.dash());
         assertTrue(config.disengage());
         assertTrue(config.dodge());
@@ -283,5 +285,21 @@ class ActionConfigTest {
         assertEquals(10, config.hideObserverPerceptionBonus());
         assertReported(source, ConfigIssue.Kind.UNKNOWN, "actions.fishing_rod_grapple");
         assertReported(source, ConfigIssue.Kind.MISSING, "actions.fishing_rod_reel");
+    }
+
+    /** A file from before mobs made several attacks spaces them by the default roll animation's length. */
+    @Test
+    void aFileWithoutMobAttackSpacingUsesTheDefault() {
+        ConfigSource source = source(complete("6.0").replace("\"mob_attack_spacing_ticks\": 7,\n", ""));
+        assertEquals(20, ActionConfig.fromJson(source).mobAttackSpacingTicks());
+        assertReported(source, ConfigIssue.Kind.MISSING, "actions.mob_attack_spacing_ticks");
+    }
+
+    @Test
+    void aNegativeMobAttackSpacingFallsBackToTheDefault() {
+        ConfigSource source =
+                source(complete("6.0").replace("\"mob_attack_spacing_ticks\": 7", "\"mob_attack_spacing_ticks\": -1"));
+        assertEquals(20, ActionConfig.fromJson(source).mobAttackSpacingTicks());
+        assertReported(source, ConfigIssue.Kind.INVALID, "actions.mob_attack_spacing_ticks");
     }
 }

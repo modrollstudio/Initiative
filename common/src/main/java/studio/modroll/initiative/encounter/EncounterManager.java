@@ -23,13 +23,13 @@ import net.minecraft.world.phys.AABB;
 import studio.modroll.critfall.api.AttackDelivery;
 import studio.modroll.critfall.api.CombatSuppression;
 import studio.modroll.critfall.api.RollService;
-import studio.modroll.critfall.api.dice.DiceExpression;
 import studio.modroll.critfall.api.dice.RollDetail;
-import studio.modroll.critfall.api.dice.RollMode;
 import studio.modroll.critfall.api.dice.RollResult;
 import studio.modroll.initiative.Initiative;
 import studio.modroll.initiative.action.ActionEconomy;
 import studio.modroll.initiative.action.Concealment;
+import studio.modroll.initiative.action.CustomMobTurns;
+import studio.modroll.initiative.action.Launches;
 import studio.modroll.initiative.checks.ChecksBridge;
 import studio.modroll.initiative.checks.ChecksIntegration;
 import studio.modroll.initiative.config.EncounterConfig;
@@ -57,8 +57,10 @@ public final class EncounterManager {
             Registries.ENTITY_TYPE, ResourceLocation.fromNamespaceAndPath(Initiative.MOD_ID, "never_joins"));
 
     private static final Map<ServerLevel, List<Encounter>> ACTIVE = new HashMap<>();
-    private static final DiceExpression D20 = DiceExpression.parse("1d20");
     private static final int MARKER_INTERVAL_TICKS = 5;
+
+    /** The mob springing an ambush, while the fight it starts forms. */
+    private static Mob ambusher;
 
     private EncounterManager() {}
 
@@ -161,6 +163,43 @@ public final class EncounterManager {
     }
 
     /**
+     * A mob springs a fight on {@code target}: it forms at the target with the mob hidden, and the
+     * other side that joins as it forms is surprised. With the target already fighting, the mob joins
+     * that fight hidden and surprises nobody. False when no fight was started.
+     */
+    public static boolean ambush(Mob mob, Player target) {
+        if (!(mob.level() instanceof ServerLevel level)) {
+            return false;
+        }
+        EncounterConfig config = InitiativeConfig.encounters();
+        if (!config.enabled()
+                || !InitiativeConfig.turns().enabled()
+                || !mob.isAlive()
+                || neverJoins(mob)
+                || encounterContaining(level, mob.getUUID()).isPresent()
+                || target.isSpectator()
+                || target.isCreative()) {
+            return false;
+        }
+        Encounter existing = encounterContaining(level, target.getUUID()).orElse(null);
+        Encounter encounter = existing != null ? existing : new Encounter(target.position());
+        if (existing == null) {
+            ACTIVE.computeIfAbsent(level, l -> new ArrayList<>()).add(encounter);
+        }
+        ambusher = mob;
+        try {
+            join(level, encounter, mob, false);
+            if (existing == null) {
+                join(level, encounter, target, false);
+                pullInRadius(level, encounter, config.triggerRadius());
+            }
+        } finally {
+            ambusher = null;
+        }
+        return true;
+    }
+
+    /**
      * A logged-out player leaves the encounter at once rather than waiting for the tick that would
      * notice their entity is gone: their turn passes on, their conditions are dropped and Critfall's
      * suppression is released, so nothing of theirs can outlive the session. Reconnecting puts them
@@ -214,6 +253,7 @@ public final class EncounterManager {
             } else {
                 pullInRadius(level, encounter, config.triggerRadius());
                 if (turns.enabled()) {
+                    pairMounts(level, encounter, turns);
                     encounter.turnOrder().tick(TurnTimeout.forCurrentActor(level, encounter.turnOrder(), turns));
                 }
                 ActionEconomy.tick(level, encounter);
@@ -247,6 +287,7 @@ public final class EncounterManager {
         OffTurnRestriction.clear();
         Concealment.clear();
         Provocation.clear();
+        Launches.clear();
     }
 
     public static List<Encounter> encounters(ServerLevel level) {
@@ -273,11 +314,14 @@ public final class EncounterManager {
         Encounter.Side side = entity instanceof Player ? Encounter.Side.PLAYER : Encounter.Side.HOSTILE;
         encounter.add(entity.getUUID(), side, entity.level().getGameTime());
         RollService.suppress(entity);
+        if (entity instanceof Mob mob && (mob == ambusher || CustomMobTurns.joinsHidden(mob))) {
+            joinHidden(encounter, mob);
+        }
         TurnConfig turns = InitiativeConfig.turns();
         if (!turns.enabled()) {
             return;
         }
-        InitiativeEntry entry = rollInitiative(entity, turns);
+        InitiativeEntry entry = rollInitiative(entity, turns, surprised(encounter, entity));
         if (havingActed) {
             encounter.turnOrder().insertHavingActed(entry);
             encounter.markOpeningAttack(entity.getUUID());
@@ -286,13 +330,40 @@ public final class EncounterManager {
         }
     }
 
-    private static InitiativeEntry rollInitiative(LivingEntity entity, TurnConfig turns) {
+    /** Hidden the way the Hide action hides: on a Stealth roll with Checks, which keeps its total, as it stands without. */
+    private static void joinHidden(Encounter encounter, Mob mob) {
+        if (!Concealment.active()) {
+            return;
+        }
+        if (!ChecksIntegration.active()) {
+            encounter.flags().setHidden(mob.getUUID());
+            return;
+        }
+        ChecksBridge.stealthCheck(mob)
+                .ifPresent(stealth -> encounter.flags().setHidden(mob.getUUID(), stealth.total()));
+    }
+
+    /**
+     * Caught by an ambush as its fight forms: on the other side from the ambusher, unless, with
+     * Checks, its passive Perception meets the ambusher's Stealth total.
+     */
+    private static boolean surprised(Encounter encounter, LivingEntity entity) {
+        if (ambusher == null
+                || !InitiativeConfig.encounters().surprise()
+                || encounter.side(entity.getUUID()) == encounter.side(ambusher.getUUID())) {
+            return false;
+        }
+        Integer stealth = encounter.flags().hiddenStealth().get(ambusher.getUUID());
+        return stealth == null || !ChecksIntegration.active() || ChecksBridge.passivePerception(entity) < stealth;
+    }
+
+    private static InitiativeEntry rollInitiative(LivingEntity entity, TurnConfig turns, boolean surprised) {
         int bonus = initiativeBonus(entity, turns);
-        RollResult roll = RollService.roll(D20);
+        RollResult roll = RollService.roll(InitiativeDerivation.dice(surprised));
         RollAnimationSync.play(
                 entity,
                 RollAnimation.initiative(
-                        RollDetail.of(RollMode.NORMAL, roll),
+                        RollDetail.of(InitiativeDerivation.mode(surprised), roll),
                         entity.getDisplayName().getString()));
         return new InitiativeEntry(entity.getUUID(), roll.total() + bonus, bonus);
     }
@@ -496,6 +567,7 @@ public final class EncounterManager {
         AiFreeze.thaw(participant);
         OffTurnRestriction.release(level, participant);
         Concealment.reveal(participant);
+        Launches.forget(participant);
         TurnOrderSync.participantRemoved(level, encounter, participant);
         ActionUiSync.participantRemoved(level, encounter, participant);
         encounter.remove(participant);
@@ -507,13 +579,32 @@ public final class EncounterManager {
             AiFreeze.thaw(participant);
             OffTurnRestriction.release(level, participant);
             Concealment.reveal(participant);
+            Launches.forget(participant);
             encounter.remove(participant);
         }
     }
 
     /**
+     * A mount steered by its mob rider acts on the rider's turn: the rider steers through the
+     * mount's navigation, which only moves while both are awake. A pair that splits, or the toggle
+     * turned off, gives the mount its own turns again from the next round.
+     */
+    private static void pairMounts(ServerLevel level, Encounter encounter, TurnConfig turns) {
+        for (UUID participant : encounter.participants()) {
+            if (turns.mountsActWithRiders()
+                    && level.getEntity(participant) instanceof Mob mount
+                    && mount.getControllingPassenger() instanceof Mob rider
+                    && encounter.contains(rider.getUUID())) {
+                encounter.turnOrder().follow(participant, rider.getUUID());
+            } else {
+                encounter.turnOrder().stopFollowing(participant);
+            }
+        }
+    }
+
+    /**
      * Reconciles freeze state against the turn every tick: all mob participants except the acting
-     * one are frozen, the acting one and excluded types thaw. The acting mob's real-time window is
+     * ones are frozen, the acting ones and excluded types thaw. The acting mob's real-time window is
      * bounded by the action economy — once its movement budget is gone it freezes in place too.
      * Reconciliation instead of transition events means a flipped config flag or a swapped turn
      * heals within one tick, and no exit path can strand a frozen mob that is still ticked here.
@@ -524,7 +615,7 @@ public final class EncounterManager {
         boolean freezeActive = turns.enabled() && turns.freezeEnabled();
         UUID current = encounter.turnOrder().currentTurn().orElse(null);
         for (UUID participant : encounter.participants()) {
-            boolean acting = participant.equals(current);
+            boolean acting = encounter.turnOrder().isActing(participant);
             if (!freezeActive || (acting && !ActionEconomy.actingMovementExhausted(level, encounter))) {
                 AiFreeze.thaw(participant);
                 continue;
@@ -535,7 +626,10 @@ public final class EncounterManager {
                 AiFreeze.thaw(participant);
             }
         }
-        if (turns.enabled() && turns.actingMarkerEnabled() && current != null) {
+        if (turns.enabled()
+                && turns.actingMarkerEnabled()
+                && current != null
+                && !Concealment.hiddenFromPlayers(encounter, current)) {
             markActingEntity(level, current);
         }
     }

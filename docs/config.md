@@ -39,6 +39,7 @@ Example (see [examples/initiative.json](examples/initiative.json)):
     "pull_nearby_players": true,
     "require_line_of_sight": true,
     "end_when_all_hidden": true,
+    "surprise": true,
     "trigger_radius": 12.0,
     "leave_radius": 20.0
   },
@@ -51,7 +52,9 @@ Example (see [examples/initiative.json](examples/initiative.json)):
     "freeze_enabled": true,
     "acting_marker_enabled": true,
     "restrict_players_off_turn": true,
-    "no_freeze_types": []
+    "no_freeze_types": [],
+    "custom_mob_turns": true,
+    "mounts_act_with_riders": true
   },
   "actions": {
     "enabled": true,
@@ -62,6 +65,7 @@ Example (see [examples/initiative.json](examples/initiative.json)):
     "attack_reach_blocks": 4.0,
     "end_turn_when_spent": false,
     "mob_end_turn_when_spent": true,
+    "mob_attack_spacing_ticks": 20,
     "dash": true,
     "disengage": true,
     "dodge": true,
@@ -123,7 +127,8 @@ Example (see [examples/initiative.json](examples/initiative.json)):
   },
   "checks": {
     "enabled": true,
-    "block_short_rests": true
+    "block_short_rests": true,
+    "extra_attack": true
   }
 }
 ```
@@ -146,6 +151,7 @@ Example (see [examples/initiative.json](examples/initiative.json)):
 | `pull_nearby_players` | boolean | Players within `trigger_radius` join the encounter when it forms, and players who walk in later join mid-encounter, rolling initiative either way. Spectator and creative players are never pulled in. Off: a player joins only by attacking or being attacked. See [encounters](encounters.md#lifecycle). |
 | `require_line_of_sight` | boolean | A hostile or (with `pull_nearby_players`) a player inside `trigger_radius` is pulled in only while it can see a participant, by vanilla's own mob line-of-sight check — so a dungeon fight no longer drags in the next room through the wall. A mob that attacks a participant, a neutral that turns hostile toward one, and a player who attacks or is attacked join regardless. Off restores the radius-only pull. See [encounters](encounters.md#who-gets-pulled-in). |
 | `end_when_all_hidden` | boolean | An encounter in which every player is hidden ends, and its mobs lose track of the hiders: they stay out of mob targeting until they attack something, a mob hurts them, they join another fight or they walk out past `leave_radius` from where the fight stood. Needs `actions.hide` and `actions.hide_suppresses_targeting`. Off: hiding never ends a fight. See [encounters](encounters.md#lifecycle). |
+| `surprise` | boolean | On (default): when a mob springs an ambush through [`MobTurns.ambush`](api.md#mob-turns), everyone on the other side who joins as the fight forms is surprised and rolls initiative with disadvantage (both dice shown). With Checks, one whose passive Perception meets the ambusher's Stealth total isn't surprised. Off: everyone rolls one d20. See [turns](turns.md#surprise). |
 | `trigger_radius` | number > 0 | Blocks around the trigger point; hostiles (and, with `pull_nearby_players`, players) inside are pulled into the encounter, and those entering later join — subject to `require_line_of_sight`. |
 | `leave_radius` | number ≥ `trigger_radius` | Participants farther than this from the encounter center leave the encounter — unless `hold_ranged_attackers` is holding an attacker in. |
 
@@ -164,6 +170,8 @@ See [turns](turns.md) for the mechanics.
 | `acting_marker_enabled` | boolean | Debug-grade particle marker above the entity whose turn it is, for playtest verification. Not the turn HUD. |
 | `restrict_players_off_turn` | boolean | Feature toggle for the off-turn hold on players (see [turns](turns.md#holding-players-off-turn)). Off = a participant player moves, builds and interacts freely while somebody else acts. Turning it off mid-fight releases every held player within a tick. |
 | `no_freeze_types` | array of entity type ids | Entity types never frozen (see [turns](turns.md#excluding-entity-types)). Same escape hatch as the `#initiative:no_freeze` tag, without needing a datapack. |
+| `custom_mob_turns` | boolean | On (default): a mod that registered a turn handler through [`MobTurns.register`](api.md#mob-turns) drives its own mobs' turns. Off: every mob takes Initiative's own turn. |
+| `mounts_act_with_riders` | boolean | On (default): a mount steered by a mob rider in the same fight, such as a spider jockey, acts on its rider's turn and the pair moves together. Off: separate turns, on which neither can move. See [turns](turns.md#rider-and-mount). |
 
 ## `actions`
 
@@ -178,7 +186,8 @@ See [actions](actions.md) for the mechanics.
 | `single_attack_per_turn` | boolean | Attacking consumes the turn's one action. Off = attacks bypass the action. |
 | `attack_reach_blocks` | number ≥ 0 | How far an attack reaches (horizontal centre-to-centre, default 4 ≈ a melee swing). Beyond it the attack is `OUT_OF_REACH` and the [turn UI](ui.md) offers no such target. |
 | `end_turn_when_spent` | boolean | A player's turn auto-ends once its action is used and its movement is exhausted. Default off since M8: the player ends the turn with the UI's End Turn button. |
-| `mob_end_turn_when_spent` | boolean | A mob's turn auto-ends once its action is used. Default on — a mob has no [turn UI](ui.md) to end its turn with. |
+| `mob_end_turn_when_spent` | boolean | A mob's turn auto-ends once its action and its attacks are used. Default on — a mob has no [turn UI](ui.md) to end its turn with. Only governs Initiative's own mob turn: a mod's [turn handler](api.md#mob-turns) ends its own. |
+| `mob_attack_spacing_ticks` | integer ≥ 0 | Ticks between a mob's attacks on Initiative's own turn when it makes more than one (default 20, the length of the default roll animation), so each roll shows. |
 | `dash` | boolean | Feature toggle for the Dash action (M4a). Off = Dash is unavailable; the other actions are unaffected. |
 | `disengage` | boolean | Feature toggle for the Disengage action (M4a). Off = Disengage is unavailable. |
 | `dodge` | boolean | Feature toggle for the Dodge action (M4a). Off = Dodge is unavailable and no attack is rolled with dodge disadvantage. |
@@ -285,10 +294,11 @@ The optional [Critfall: Checks](actions.md#with-checks-installed) integration.
 |---|---|---|
 | `enabled` | boolean | On (default): with Checks installed, Shove, Grapple, Escape and Hide roll the participants' own skills through Checks instead of the flat config bonuses, and initiative adds Dexterity instead of the movement-speed bonus. Off, or without Checks installed: the flat bonuses and movement-speed initiative, exactly as before. |
 | `block_short_rests` | boolean | On (default): with Checks installed and `enabled` on, a player in an encounter can't take Checks' short rest at a campfire, and a rest under way breaks when they are pulled into a fight. They can rest again as soon as they leave the encounter. Off: Checks' own rules decide. |
+| `extra_attack` | boolean | On (default): with Checks installed and `enabled` on, a player's Attack action makes as many attacks as their class gives at their level (Checks' Extra Attack). Off: one attack per Attack action. See [actions](actions.md#extra-attack). |
 
 The checks each value must pass: `trigger_radius` must be positive and `leave_radius` at least
 `trigger_radius`; both turn timeouts must be positive and the two initiative values must not be
-negative; `movement_budget_blocks`, the reach and strength values, the cover AC bonuses and
+negative; `mob_attack_spacing_ticks` must not be negative; `movement_budget_blocks`, the reach and strength values, the cover AC bonuses and
 `block_placement_movement_cost` must not be negative; the two cover thresholds must be within
 `[0, 1]` with `half_cover_threshold` not exceeding `three_quarter_cover_threshold`;
 `break_distance_blocks` must be at least `reach_blocks`; the roll-animation tick counts must not be

@@ -16,6 +16,7 @@ import net.minecraft.world.item.CrossbowItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
 import studio.modroll.initiative.Initiative;
+import studio.modroll.initiative.action.Launches;
 import studio.modroll.initiative.action.RangedAttacks;
 import studio.modroll.initiative.action.Teleports;
 import studio.modroll.initiative.config.InitiativeConfig;
@@ -136,12 +137,17 @@ public final class OffTurnRestriction {
         return new Vec3(anchor.x, inFluid ? anchor.y : current.y, anchor.z);
     }
 
+    /** A thrown player flies where it was thrown, and is held where it lands. */
     private static void hold(Player player) {
         UUID id = player.getUUID();
         Vec3 current = player.position();
-        Vec3 anchor = ANCHORS.computeIfAbsent(id, key -> current);
         root(player);
         RangedAttacks.lowerDrawnWeapon(player);
+        if (Launches.inFlight(player)) {
+            ANCHORS.put(id, current);
+            return;
+        }
+        Vec3 anchor = ANCHORS.computeIfAbsent(id, key -> current);
         Vec3 held = heldPosition(anchor, current, standsInFluid(player));
         ANCHORS.replace(id, held);
         if (!held.equals(current)) {

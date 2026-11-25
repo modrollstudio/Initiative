@@ -30,7 +30,7 @@ Server-side only; clients receive nothing yet. All values come from [config](con
   [attacker that fought its way in](#attacking-into-a-fight-from-outside) and is still at it. A former neutral is
   dropped as well once it is no longer hostile toward any player in the encounter — anger that runs
   out is a leave path like fleeing the bubble, and it takes the same exit. That one exit stands down
-  while a participant is **hidden**: concealment is what took the mob's target away, not the mob
+  while a player is **hidden**: concealment is what took the mob's target away, not the mob
   calming down (see [Hide](actions.md#hidden-also-hides-you-from-mob-ai)). A player who
   disconnects is dropped at once rather than a tick later; see [multiplayer](multiplayer.md). So is a
   player who changes dimension, by any route — a command, a portal, another mod's travel — through the

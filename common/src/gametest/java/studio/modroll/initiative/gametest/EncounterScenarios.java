@@ -39,11 +39,11 @@ import studio.modroll.initiative.encounter.EncounterManager;
 public final class EncounterScenarios {
 
     private static final EncounterConfig TEST_CONFIG =
-            new EncounterConfig(true, true, true, false, true, true, true, true, 3.0, 5.0);
+            new EncounterConfig(true, true, true, false, true, true, true, true, 3.0, 5.0, true);
     private static final EncounterConfig SIGHT_NOT_REQUIRED =
-            new EncounterConfig(true, true, true, false, true, true, false, true, 3.0, 5.0);
+            new EncounterConfig(true, true, true, false, true, true, false, true, 3.0, 5.0, true);
     private static final TurnConfig TURNS_DISABLED =
-            new TurnConfig(false, 100, 100, 20.0, 12, false, false, false, Set.of());
+            new TurnConfig(false, 100, 100, 20.0, 12, false, false, false, Set.of(), true, true);
 
     /**
      * The sight scenarios: the player at (1, 1) hits a husk at (2, 2), and a stone wall along z = 3,
@@ -174,7 +174,7 @@ public final class EncounterScenarios {
     }
 
     public static void disabledFlagFormsNoEncounter(GameTestHelper helper) {
-        prepare(helper, new EncounterConfig(false, true, true, false, true, true, true, true, 3.0, 5.0));
+        prepare(helper, new EncounterConfig(false, true, true, false, true, true, true, true, 3.0, 5.0, true));
         Player player = spawnPlayer(helper, 1, 1);
         Husk husk = spawnHusk(helper, 2, 2);
         husk.hurt(helper.getLevel().damageSources().playerAttack(player), 1.0f);

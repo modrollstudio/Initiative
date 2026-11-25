@@ -93,17 +93,37 @@ class EncounterTest {
         assertNull(encounter.side(UUID.randomUUID()));
     }
 
-    @Test
-    void budgetResetsOncePerTurnKey() {
+    private static Encounter inOrder(UUID... participants) {
         Encounter encounter = new Encounter(CENTER);
+        for (int i = 0; i < participants.length; i++) {
+            encounter.turnOrder().insert(new InitiativeEntry(participants[i], 20 - i, 0));
+        }
+        return encounter;
+    }
+
+    @Test
+    void budgetResetsOncePerTurn() {
         UUID actor = UUID.randomUUID();
-        TurnBudget budget = encounter.budgetFor(1, actor, 6.0);
+        Encounter encounter = inOrder(actor, UUID.randomUUID());
+        TurnBudget budget = encounter.budgetFor(actor, 6.0);
         budget.consumeMovement(4.0);
         budget.useAction();
-        assertSame(budget, encounter.budgetFor(1, actor, 6.0));
-        assertEquals(2.0, encounter.budgetFor(1, actor, 6.0).movementRemaining(), 1e-9);
-        assertEquals(6.0, encounter.budgetFor(1, UUID.randomUUID(), 6.0).movementRemaining());
-        assertTrue(encounter.budgetFor(2, actor, 6.0).actionAvailable());
+        assertSame(budget, encounter.budgetFor(actor, 6.0));
+        assertEquals(2.0, encounter.budgetFor(actor, 6.0).movementRemaining(), 1e-9);
+        encounter.turnOrder().endTurn();
+        encounter.turnOrder().endTurn();
+        assertTrue(encounter.budgetFor(actor, 6.0).actionAvailable());
+    }
+
+    /** A mount acting on its rider's turn spends from a budget of its own. */
+    @Test
+    void eachParticipantActingOnATurnHasItsOwnBudget() {
+        UUID rider = UUID.randomUUID();
+        UUID mount = UUID.randomUUID();
+        Encounter encounter = inOrder(rider, mount);
+        encounter.budgetFor(rider, 6.0).useAction();
+        assertTrue(encounter.budgetFor(mount, 8.0).actionAvailable());
+        assertEquals(8.0, encounter.budgetFor(mount, 8.0).movementRemaining());
     }
 
     @Test
@@ -118,14 +138,16 @@ class EncounterTest {
 
     @Test
     void startingAnActorsTurnClearsItsOwnPerTurnFlags() {
-        Encounter encounter = new Encounter(CENTER);
         UUID actor = UUID.randomUUID();
         UUID other = UUID.randomUUID();
-        encounter.budgetFor(1, actor, 6.0);
+        Encounter encounter = inOrder(actor, other);
+        encounter.budgetFor(actor, 6.0);
         encounter.flags().setDodging(actor);
-        encounter.budgetFor(1, other, 6.0);
+        encounter.turnOrder().endTurn();
+        encounter.budgetFor(other, 6.0);
         assertTrue(encounter.flags().isDodging(actor));
-        encounter.budgetFor(2, actor, 6.0);
+        encounter.turnOrder().endTurn();
+        encounter.budgetFor(actor, 6.0);
         assertFalse(encounter.flags().isDodging(actor));
     }
 
@@ -141,11 +163,13 @@ class EncounterTest {
 
     @Test
     void budgetResetClearsTheMovementAnchor() {
-        Encounter encounter = new Encounter(CENTER);
         UUID actor = UUID.randomUUID();
-        encounter.budgetFor(1, actor, 6.0);
+        UUID other = UUID.randomUUID();
+        Encounter encounter = inOrder(actor, other);
+        encounter.budgetFor(actor, 6.0);
         encounter.setMovementAnchor(new Vec3(1, 0, 1));
-        encounter.budgetFor(2, actor, 6.0);
+        encounter.turnOrder().endTurn();
+        encounter.budgetFor(other, 6.0);
         assertNull(encounter.movementAnchor());
     }
 

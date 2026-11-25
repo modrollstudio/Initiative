@@ -22,6 +22,7 @@ import studio.modroll.initiative.config.ActionConfig;
 import studio.modroll.initiative.config.ChecksConfig;
 import studio.modroll.initiative.config.CoverConfig;
 import studio.modroll.initiative.config.GrappleConfig;
+import studio.modroll.initiative.config.RollAnimationConfig;
 
 /** Spawn/cleanup/roll-scripting helpers shared by the encounter, turn-order and freeze scenarios. */
 final class ScenarioSupport {
@@ -33,7 +34,7 @@ final class ScenarioSupport {
      */
     static final ActionConfig ACTIONS_OFF = new ActionConfig(
             false, 6.0, true, true, true, 4.0, true, true, true, true, true, true, true, true, 3.0, 10, 0, true, true,
-            3.0, 1.0, 0, 0, true, 8.0, true, 1.0, 0, 0, true, 24.0, 64.0);
+            3.0, 1.0, 0, 0, true, 8.0, true, 1.0, 0, 0, true, 24.0, 64.0, 20);
 
     /**
      * Pre-M5b suites drive attacks in open plots and must see exactly the no-cover, free-placement
@@ -53,7 +54,10 @@ final class ScenarioSupport {
      * The GameTest runs have Checks installed, so every suite whose initiative, contests or Hide assert
      * flat-bonus outcomes pins the integration off; the Checks suite pins it on.
      */
-    static final ChecksConfig CHECKS_OFF = new ChecksConfig(false, true);
+    static final ChecksConfig CHECKS_OFF = new ChecksConfig(false, true, true);
+
+    /** For the suites that count the rolls a fight shows. */
+    static final RollAnimationConfig ANIMATION_ON = new RollAnimationConfig(true, 10, 10, 2, true, true);
 
     private ScenarioSupport() {}
 

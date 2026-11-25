@@ -38,11 +38,11 @@ import studio.modroll.initiative.turn.TurnOrder;
 public final class OffTurnScenarios {
 
     private static final EncounterConfig TIGHT_BUBBLE =
-            new EncounterConfig(true, true, true, false, true, true, true, true, 1.0, 8.0);
+            new EncounterConfig(true, true, true, false, true, true, true, true, 1.0, 8.0, true);
     private static final TurnConfig RESTRICT_ON =
-            new TurnConfig(true, 1000, 1000, 20.0, 12, false, false, true, Set.of());
+            new TurnConfig(true, 1000, 1000, 20.0, 12, false, false, true, Set.of(), true, true);
     private static final TurnConfig RESTRICT_OFF =
-            new TurnConfig(true, 1000, 1000, 20.0, 12, false, false, false, Set.of());
+            new TurnConfig(true, 1000, 1000, 20.0, 12, false, false, false, Set.of(), true, true);
     /**
      * A movement budget far larger than any step taken here: these scenarios walk the acting player
      * repeatedly, and an exhausted budget would revert it for reasons that have nothing to do with
@@ -50,7 +50,7 @@ public final class OffTurnScenarios {
      */
     private static final ActionConfig ACTIONS = new ActionConfig(
             true, 100.0, true, true, true, 4.0, false, true, true, true, true, true, true, true, 3.0, 0, 0, true, true,
-            3.0, 1.0, 0, 0, true, 8.0, true, 1.0, 0, 0, true, 24.0, 64.0);
+            3.0, 1.0, 0, 0, true, 8.0, true, 1.0, 0, 0, true, 24.0, 64.0, 20);
 
     private static final CoverConfig PLACEMENT_COSTS_MOVEMENT =
             new CoverConfig(false, 2, 5, 0.5, 0.75, true, true, 1.0);

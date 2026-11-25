@@ -26,19 +26,20 @@ public final class ActionGate {
 
     private ActionGate() {}
 
+    /** {@code as}, when not null, is the cost paid in place of the action's own. */
     public static ActionResult invoke(
-            ServerLevel level, LivingEntity actor, ResourceLocation id, ActionRequest request) {
+            ServerLevel level, LivingEntity actor, ResourceLocation id, ActionRequest request, ActionCost as) {
         Action action = ActionRegistry.get(id).orElse(null);
         if (action == null) {
             return ActionResult.rejected(ActionStatus.DISABLED);
         }
         Encounter encounter =
                 EncounterManager.encounterContaining(level, actor.getUUID()).orElse(null);
-        ActionStatus rejection = availability(encounter, actor, action);
+        ActionCost cost = as != null ? as : action.cost();
+        ActionStatus rejection = availability(encounter, actor, action, cost);
         if (rejection != null) {
             return ActionResult.rejected(rejection);
         }
-        ActionCost cost = action.cost();
         TurnBudget budget = turnGated(cost) ? actingBudget(encounter, actor) : null;
         ActionStatus badTarget = targetRejection(action.targeting(), encounter, actor, request);
         if (badTarget != null) {
@@ -57,6 +58,10 @@ public final class ActionGate {
      * {@link #invoke} asks to refuse one, so the two can never disagree.
      */
     public static ActionStatus availability(Encounter encounter, LivingEntity actor, Action action) {
+        return availability(encounter, actor, action, action.cost());
+    }
+
+    private static ActionStatus availability(Encounter encounter, LivingEntity actor, Action action, ActionCost cost) {
         if (!ActionEconomy.active()) {
             return ActionStatus.INACTIVE;
         }
@@ -69,22 +74,25 @@ public final class ActionGate {
         if (!action.availableTo(actor)) {
             return ActionStatus.DISABLED;
         }
-        ActionCost cost = action.cost();
         boolean turnGated = turnGated(cost);
-        if (turnGated && !isCurrentTurn(encounter, actor)) {
+        if (turnGated && !encounter.turnOrder().isActing(actor.getUUID())) {
             return ActionStatus.NOT_YOUR_TURN;
         }
         TurnBudget budget = turnGated ? actingBudget(encounter, actor) : null;
         return resourceRejection(
                 cost,
                 budget != null && budget.actionAvailable(),
+                budget != null && budget.attackAvailable(),
                 budget != null && budget.bonusActionAvailable(),
                 encounter.flags().hasReaction(actor.getUUID()),
                 budget == null ? 0.0 : budget.movementRemaining(),
                 action.movementCost());
     }
 
-    /** Every participant this entity-targeting action would accept right now, side and reach applied. */
+    /**
+     * Every participant this entity-targeting action would accept right now, side and reach applied.
+     * An enemy hidden from the players is left off: a player can still swing at where it stands.
+     */
     public static List<LivingEntity> validTargets(
             ServerLevel level, Encounter encounter, LivingEntity actor, ActionTargeting.Entity targeting) {
         double reach = targeting.reachBlocks().getAsDouble();
@@ -93,7 +101,8 @@ public final class ActionGate {
             if (!(level.getEntity(participant) instanceof LivingEntity candidate)) {
                 continue;
             }
-            if (!sideMatches(targeting.side(), encounter, actor, candidate)) {
+            if (!sideMatches(targeting.side(), encounter, actor, candidate)
+                    || Concealment.hiddenFromPlayers(encounter, participant)) {
                 continue;
             }
             if (withinReach(reach, actor, candidate)) {
@@ -111,12 +120,14 @@ public final class ActionGate {
     static ActionStatus resourceRejection(
             ActionCost cost,
             boolean actionAvailable,
+            boolean attackAvailable,
             boolean bonusAvailable,
             boolean reactionAvailable,
             double movementRemaining,
             double movementCost) {
         return switch (cost) {
             case ACTION -> actionAvailable ? null : ActionStatus.NO_ACTION;
+            case ATTACK -> attackAvailable ? null : ActionStatus.NO_ACTION;
             case BONUS_ACTION -> bonusAvailable ? null : ActionStatus.NO_BONUS_ACTION;
             case REACTION -> reactionAvailable ? null : ActionStatus.NO_REACTION;
             case MOVEMENT -> movementRemaining >= movementCost ? null : ActionStatus.NO_MOVEMENT;
@@ -192,22 +203,26 @@ public final class ActionGate {
         return dx * dx + dz * dz;
     }
 
-    private static boolean isCurrentTurn(Encounter encounter, LivingEntity actor) {
-        return actor.getUUID().equals(encounter.turnOrder().currentTurn().orElse(null));
-    }
-
     private static TurnBudget actingBudget(Encounter encounter, LivingEntity actor) {
         return ActionEconomy.budgetOf(encounter, actor);
     }
 
     private static void spend(
             Encounter encounter, LivingEntity actor, TurnBudget budget, ActionCost cost, double movementCost) {
+        if (cost == ActionCost.REACTION) {
+            encounter.flags().useReaction(actor.getUUID());
+            return;
+        }
+        charge(budget, cost, movementCost, cost == ActionCost.ATTACK ? AttackSources.perAction(actor) : 1);
+    }
+
+    static void charge(TurnBudget budget, ActionCost cost, double movementCost, int attacksPerAction) {
         switch (cost) {
             case ACTION -> budget.useAction();
+            case ATTACK -> budget.useAttack(attacksPerAction);
             case BONUS_ACTION -> budget.useBonusAction();
             case MOVEMENT -> budget.consumeMovement(movementCost);
-            case REACTION -> encounter.flags().useReaction(actor.getUUID());
-            case FREE -> {}
+            case REACTION, FREE -> {}
         }
     }
 }
