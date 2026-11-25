@@ -41,6 +41,9 @@ actions:
 | `entity` | The panel closes and you enter targeting: look at a target, **left click** to confirm, **right click** to cancel. Only the targets the server offered are pickable, so anything you can aim at is one the gate accepts. |
 | `position` | The panel closes and you aim at a block; **left click** confirms, **right click** cancels. |
 
+A mob hidden from the players (see [mob turns](api.md#hidden-mobs-joinshidden-ambush-hidden)) is
+never offered; you can still swing at where it stands, with disadvantage.
+
 While targeting, the attack and use clicks belong to the UI and never swing or place a block. The
 prompt above the bar names the target you are on, in green, or tells you to keep looking.
 
@@ -59,7 +62,7 @@ exactly what the End Turn button does, and nothing while the button is greyed. P
 drops a target you were aiming.
 
 Mobs have no bar to click, so `actions.mob_end_turn_when_spent` (default **on**) keeps ending their
-turn once their action is spent. Turning it off leaves mobs sitting out the timeout, which is
+turn once their action and its attacks are spent. Turning it off leaves mobs sitting out the timeout, which is
 rarely what you want.
 
 ## Naming an action in the UI

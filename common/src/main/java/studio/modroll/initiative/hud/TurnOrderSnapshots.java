@@ -8,12 +8,16 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import studio.modroll.initiative.action.Concealment;
 import studio.modroll.initiative.config.InitiativeConfig;
 import studio.modroll.initiative.encounter.Encounter;
 import studio.modroll.initiative.turn.InitiativeEntry;
 import studio.modroll.initiative.turn.TurnTimeout;
 
-/** Builds the HUD's immutable view of an encounter; entries follow the turn order exactly. */
+/**
+ * Builds the HUD's immutable view of an encounter; entries follow the turn order, less the mobs
+ * hidden from the players, whose turns pass with nobody shown acting.
+ */
 public final class TurnOrderSnapshots {
 
     private TurnOrderSnapshots() {}
@@ -21,13 +25,15 @@ public final class TurnOrderSnapshots {
     public static TurnOrderSnapshot build(ServerLevel level, Encounter encounter) {
         List<TurnOrderSnapshot.Entry> entries = new ArrayList<>();
         for (InitiativeEntry initiative : encounter.turnOrder().order()) {
-            if (level.getEntity(initiative.participant()) instanceof LivingEntity entity) {
+            if (level.getEntity(initiative.participant()) instanceof LivingEntity entity
+                    && !Concealment.hiddenFromPlayers(encounter, initiative.participant())) {
                 entries.add(entry(entity));
             }
         }
         int currentActorId = encounter
                 .turnOrder()
                 .currentTurn()
+                .filter(current -> !Concealment.hiddenFromPlayers(encounter, current))
                 .map(level::getEntity)
                 .filter(Objects::nonNull)
                 .map(Entity::getId)

@@ -1,6 +1,7 @@
 package studio.modroll.initiative.turn;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
@@ -240,5 +241,67 @@ class TurnOrderTest {
         order.endTurn();
         order.endTurn();
         assertEquals(C, order.currentTurn().orElseThrow());
+    }
+
+    /** The mount B rolled higher than its rider D, yet acts with it, and its own slot says nothing. */
+    @Test
+    void aMountMovesToJustAfterItsRiderAndIsPassedOverQuietly() {
+        TurnOrder order = orderOf(
+                new InitiativeEntry(A, 20, 0),
+                new InitiativeEntry(B, 15, 0),
+                new InitiativeEntry(C, 12, 0),
+                new InitiativeEntry(D, 5, 0));
+        order.follow(B, D);
+        assertEquals(List.of(A, C, D, B), participants(order));
+        order.endTurn();
+        order.endTurn();
+        assertEquals(D, order.currentTurn().orElseThrow());
+        assertTrue(order.isActing(D));
+        assertTrue(order.isActing(B));
+        assertFalse(order.isActing(C));
+        assertEquals(B, order.mountOf(D).orElseThrow());
+        order.endTurn();
+        assertEquals(A, order.currentTurn().orElseThrow());
+        assertEquals(2, order.round());
+        assertFalse(order.isActing(B));
+        assertEquals(List.of(), order.drainSkippedTurns());
+    }
+
+    @Test
+    void anActingMountFollowingItsRiderHandsTheTurnOn() {
+        TurnOrder order =
+                orderOf(new InitiativeEntry(B, 20, 0), new InitiativeEntry(A, 15, 0), new InitiativeEntry(D, 10, 0));
+        order.follow(B, D);
+        assertEquals(List.of(A, D, B), participants(order));
+        assertEquals(A, order.currentTurn().orElseThrow());
+    }
+
+    @Test
+    void aMountTakesItsOwnTurnsAgainTheRoundAfterThePairSplits() {
+        TurnOrder order =
+                orderOf(new InitiativeEntry(A, 20, 0), new InitiativeEntry(D, 10, 0), new InitiativeEntry(B, 5, 0));
+        order.follow(B, D);
+        order.endTurn();
+        order.stopFollowing(B);
+        assertFalse(order.isActing(B));
+        order.endTurn();
+        assertEquals(A, order.currentTurn().orElseThrow());
+        order.endTurn();
+        order.endTurn();
+        assertEquals(B, order.currentTurn().orElseThrow());
+        assertEquals(List.of(), order.drainSkippedTurns());
+    }
+
+    @Test
+    void aMountWhoseRiderLeavesIsPassedOverUntilTheNextRound() {
+        TurnOrder order =
+                orderOf(new InitiativeEntry(A, 20, 0), new InitiativeEntry(D, 10, 0), new InitiativeEntry(B, 5, 0));
+        order.follow(B, D);
+        order.endTurn();
+        order.remove(D);
+        assertEquals(A, order.currentTurn().orElseThrow());
+        assertEquals(2, order.round());
+        order.endTurn();
+        assertEquals(B, order.currentTurn().orElseThrow());
     }
 }

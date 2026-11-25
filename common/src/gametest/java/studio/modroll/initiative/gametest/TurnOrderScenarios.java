@@ -26,9 +26,10 @@ import studio.modroll.initiative.turn.TurnOrder;
 public final class TurnOrderScenarios {
 
     private static final EncounterConfig TIGHT_BUBBLE =
-            new EncounterConfig(true, true, true, false, true, true, true, true, 1.0, 30.0);
+            new EncounterConfig(true, true, true, false, true, true, true, true, 1.0, 30.0, true);
     /** Freeze stays off here: M2a order semantics must hold without M2b's freeze in play. */
-    private static final TurnConfig TURNS = new TurnConfig(true, 1000, 1000, 20.0, 12, false, false, false, Set.of());
+    private static final TurnConfig TURNS =
+            new TurnConfig(true, 1000, 1000, 20.0, 12, false, false, false, Set.of(), true, true);
 
     private TurnOrderScenarios() {}
 
@@ -78,7 +79,7 @@ public final class TurnOrderScenarios {
     }
 
     public static void turnTimeoutAdvancesWithoutEndTurn(GameTestHelper helper) {
-        prepare(helper, new TurnConfig(true, 2, 2, 20.0, 12, false, false, false, Set.of()));
+        prepare(helper, new TurnConfig(true, 2, 2, 20.0, 12, false, false, false, Set.of(), true, true));
         Player player = ScenarioSupport.spawnPlayer(helper, 1, 1);
         Husk husk = ScenarioSupport.spawnHusk(helper, 2, 2);
         formEncounter(helper, player, List.of(1, 20), husk);
@@ -99,7 +100,7 @@ public final class TurnOrderScenarios {
      * table for a player's length. The player's own turn must be untouched by the short one.
      */
     public static void aMobsTurnTimesOutFasterThanAPlayers(GameTestHelper helper) {
-        prepare(helper, new TurnConfig(true, 200, 20, 20.0, 12, false, false, false, Set.of()));
+        prepare(helper, new TurnConfig(true, 200, 20, 20.0, 12, false, false, false, Set.of(), true, true));
         Player player = ScenarioSupport.spawnPlayer(helper, 1, 1);
         Husk husk = ScenarioSupport.spawnHusk(helper, 2, 2);
         formEncounter(helper, player, List.of(20, 1), husk);

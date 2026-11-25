@@ -21,6 +21,15 @@ player (speed 0.1) gets +2 and a zombie (speed 0.23) gets +4. With
 participant's Dexterity modifier instead, which can be negative. The result is stored on the
 encounter as an initiative entry (participant, total, bonus).
 
+### Surprise
+
+A mob a mod lets spring an ambush ([`MobTurns.ambush`](api.md#mob-turns)) starts the fight hidden,
+and everyone on the other side who joins as the fight forms is surprised: they roll initiative as
+`2d20kl1`, keeping the lower die, and the roll shows both dice. As in SRD 5.2 that is all surprise
+does; nobody loses a turn. With [Checks](actions.md#with-checks-installed), a participant whose
+passive Perception meets the ambusher's Stealth total saw it coming and rolls normally. Anyone who
+joins later rolls normally too. `encounters.surprise` off: everyone rolls one d20.
+
 ## Turn order and tie-breaking
 
 Participants are sorted by initiative total, descending. Ties break by:
@@ -61,6 +70,21 @@ their turn passes on and nothing of theirs is left behind — see [multiplayer](
 
 Encounter end (M1 rules) tears the turn state down with the encounter.
 
+## Rider and mount
+
+A mob rider steers through its mount: its navigation and move control are the mount's, and they only
+move while both are awake. So a mounted pair, such as a spider jockey, acts as one: the mount's entry
+moves to just after its rider's, at the rider's initiative, and is passed over without a word. On the
+rider's turn both are thawed and move once, at the mount's speed, measured against the mount's
+movement budget. Each takes its own action: the rider attacks, and the mount bites if it can. Moving
+away from someone is provoked by the mount. The turn ends when both are done; a mount on
+Initiative's own turn is done once its rider is, since it can't move by itself.
+
+When the pair splits (one dies, the rider dismounts), the mount takes its own turns again from the
+next round. This applies to any mount steered by a mob rider in the same fight, from any mod.
+`turns.mounts_act_with_riders` off gives the pair separate turns, on which neither can move, as
+before 0.3.0.
+
 ## AI freeze
 
 While `freeze_enabled` is on, every mob participant that is not the acting one is **frozen**: its
@@ -70,8 +94,9 @@ own power. Everything else in its tick runs normally — gravity, status effects
 timers, damage. A frozen mob is fully targetable and damageable; it just doesn't act (and won't
 retaliate until its turn).
 
-When the turn state makes it an entity's turn, it thaws — and what that turn allows is governed
-by the [action economy](actions.md): the acting mob attacks through Critfall's API, moves under a
+When the turn state makes it an entity's turn, it thaws (with its mount, for a
+[mounted pair](#rider-and-mount)) — and what that turn allows is governed by the
+[action economy](actions.md): the acting mob attacks through Critfall's API, moves under a
 budget, and freezes in place once the budget is gone. Players are never frozen: you cannot freeze
 player input like mob AI, so a player off its turn is held by the separate rule below.
 
@@ -105,7 +130,9 @@ whose turn it is **not** cannot act on the world: it may not walk, teleport, bre
 block, use an item, or interact with a block or an entity. One use is allowed: loading a
 crossbow. Loading is readying, not acting, so a crossbow loaded during someone else's turn is ready
 to fire on yours; firing it still waits. A bow or trident still drawn when your turn passes is
-lowered, so it can't be released off turn. A refused use resends your inventory, so your client does
+lowered, so it can't be released off turn. A player thrown by a mob's action
+(`ActionContext.launch`, see the [API](api.md#actioncontext)) flies where it was thrown and is held
+where it lands. A refused use resends your inventory, so your client does
 not keep showing a crossbow as fired or loaded when the server refused it. Attacking was already refused by the action economy.
 This is what the action UI has shown since M8 — the bar greys out off-turn — made true of the world
 as well. On the player's own turn everything works normally, movement inside the budget included.
@@ -145,7 +172,9 @@ screen: one cell per participant (type icon + name) in turn order, with the curr
 highlighted. A big encounter wraps onto further rows rather than running off the screen edges, and
 a name too long for its cell is cut short — the bar stays readable and centered at any party size. Players show their skin face, mobs their spawn-egg icon, and anything unresolved
 falls back to name only. Dead or fled participants disappear from the bar; survivors keep their
-relative order and the highlight follows the turn.
+relative order and the highlight follows the turn. A mob hidden from the players (one that
+[joined hidden or sprang an ambush](api.md#hidden-mobs-joinshidden-ambush-hidden)) is left off the
+bar until it is found, and on its turn nobody is highlighted. Its acting marker isn't shown either.
 
 Since M9 the acting participant's cell also carries the **turn countdown**, so a player waiting for
 their slot reads both whose turn it is and how long is left.

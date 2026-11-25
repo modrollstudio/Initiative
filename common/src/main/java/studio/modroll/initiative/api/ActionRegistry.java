@@ -50,7 +50,13 @@ public final class ActionRegistry {
      */
     public static ActionResult invoke(
             ServerLevel level, LivingEntity actor, ResourceLocation id, ActionRequest request) {
-        return ActionGate.invoke(level, actor, id, request);
+        return ActionGate.invoke(level, actor, id, request, null);
+    }
+
+    /** Takes the action paying {@code as} instead of its own cost: Disengage or Hide as a bonus action. */
+    public static ActionResult invoke(
+            ServerLevel level, LivingEntity actor, ResourceLocation id, ActionRequest request, ActionCost as) {
+        return ActionGate.invoke(level, actor, id, request, as);
     }
 
     /** Test-scope only, mirroring Critfall's {@code RollService.setRoller} convention. */

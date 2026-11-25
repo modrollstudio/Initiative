@@ -63,6 +63,13 @@ Ids are unique: registering an id twice throws rather than quietly replacing som
 | `MOVEMENT` | `movementCost()` blocks of the movement budget | yes |
 | `REACTION` | the one reaction per round, refreshed at its owner's turn start | **no** |
 | `FREE` | nothing | yes |
+| `ATTACK` | one attack of the turn's Attack action | yes |
+
+`ATTACK` is how several attacks share one action. The first `ATTACK` spends the action and opens the
+rest of the Attack action's attacks ([`Attacks`](#several-attacks-attacks)); each later one spends one
+of those. With one attack per action it behaves exactly like `ACTION`. Initiative's own Attack and a
+bow, crossbow or trident shot cost `ATTACK` (`FREE` with `single_attack_per_turn` off), so a mod's
+`ATTACK` action can be the second attack after a swing, or the other way round.
 
 `REACTION` is the only cost taken off-turn. Initiative does not yet expose a public trigger seam, so
 a reaction you register can only be invoked by code you control calling `ActionRegistry.invoke`; a
@@ -99,8 +106,22 @@ boolean spendMovement(double blocks);    // false if unaffordable; nothing is sp
 void grantMovement(double blocks);       // Dash and its kin
 void showRoll(AttackResult result, LivingEntity opponent);
 void showRoll(ContestResult result, LivingEntity opponent);
+AttackResult attack(LivingEntity target, AttackContext attack);
+void launch(LivingEntity target, Vec3 motion);
 Optional<JsonObject> settings();         // this action's datapack file
 ```
+
+`attack` rolls an attack through Critfall the way Initiative's own Attack does and shows it: Help and
+hiding give advantage (and are spent), Dodge and a hidden target give disadvantage, cover adds to the
+target's AC, and a hit finds a hidden target. Your context's own mode joins in the 5e way, so
+advantage and disadvantage still cancel. A projectile or thrown context also gets the ranged rules:
+disadvantage past `ranged_normal_range_blocks` or with a hostile in reach, and past
+`ranged_long_range_blocks` nothing is rolled and it misses. Into total cover that blocks attacks it
+misses with nothing rolled as well. The dice are Critfall's: your damage dice, your mode, its roll.
+
+`launch` throws `target` with `motion`. The flight is not the target's own movement: it spends none
+of its budget and provokes no opportunity attack, and a player thrown off their turn flies instead of
+being pulled back, then is held where they land.
 
 Use `showRoll` rather than reaching for Initiative's animation sync — it is what makes your roll
 appear with the same drama as a built-in's, and it respects the player's animation config.
@@ -145,6 +166,98 @@ ActionResult result = ActionRegistry.invoke(level, actor, TAUNT, ActionRequest.o
 
 `ActionRequest.none()`, `ActionRequest.of(entity)` and `ActionRequest.at(pos)` cover the three
 targeting shapes.
+
+To take an action for a different cost than its own, pass that cost:
+
+```java
+ActionRegistry.invoke(level, mob, ResourceLocation.fromNamespaceAndPath("initiative", "disengage"),
+        ActionRequest.none(), ActionCost.BONUS_ACTION);
+```
+
+The gate then checks and charges the bonus action and leaves the action alone: Disengage or Hide as
+a bonus action. The rest of the gate is unchanged.
+
+## Mob turns
+
+Initiative's own mob turn is simple: the mob walks at the nearest enemy it can see and attacks it, or
+shoots once with a bow, crossbow or trident. A mod that brings its own moves and the AI that picks
+them takes over its mobs' turns with these. Register them during mod construction.
+
+### Several attacks: `Attacks`
+
+```java
+Attacks.register(creature -> creature instanceof Bugbear ? 2 : 1);
+```
+
+How many attacks one Attack action makes for a creature: a mob's Multiattack, a player's Extra
+Attack. With several sources the highest answer counts, never below 1; they don't add up. Initiative's
+own mob turn makes all of them on its own, `mob_attack_spacing_ticks` apart so each roll shows. A
+handler invokes `initiative:attack`, or its own `ATTACK` action, once per attack.
+
+### A turn handler: `MobTurns.register`
+
+```java
+MobTurns.register(mob -> mob instanceof Bugbear, (mob, turn) -> {
+    if (turn.ticks() == 0 && inReach(mob)) {
+        ActionRegistry.invoke(level, mob, DROP_STRIKE, ActionRequest.of(target(mob)));
+    }
+    return done(mob, turn);
+});
+```
+
+A mob the predicate matches takes its turns through the handler instead of Initiative's. The first
+match wins. `tick` runs once per server tick of the mob's own turn; return true to end the turn.
+`turn.ticks()` is how far into the turn it is, 0 on its first tick, and `turn.movementLeft()` the
+blocks it can still move.
+
+Initiative keeps the rest: the turn, its budget, the movement clamp, the freeze on everyone else's
+turns. Every action the handler takes goes through `ActionRegistry.invoke` and the same gate as a
+player's, so it can't spend what it hasn't got. Movement is the mob's own AI walking it, measured
+against its budget like anyone's. A turn that never returns true ends on `mob_turn_timeout_ticks`. A
+handler that throws is logged and its turn ends, so a broken mod can't stall a fight.
+`mob_end_turn_when_spent` only governs Initiative's own turn. With `turns.custom_mob_turns` off,
+every mob takes Initiative's turn.
+
+An action that takes time (a leap, a wind up) is split: the effect resolves inside `perform()`, and
+whatever takes ticks happens between actions, in the handler's ticks, as movement or as show. Give a
+mob's own actions `availableTo` so they reach only that mob, never a player's bar or command.
+
+A bonus action is a `BONUS_ACTION` action, or an existing one invoked with
+`ActionCost.BONUS_ACTION`. An action out of turn is a `REACTION` action, which isn't turn gated:
+invoke it from your mob's own code when its trigger fires. It spends the mob's reaction for the
+round, and a second one that round is refused `NO_REACTION`.
+
+Built in action ids a handler may invoke, all in the `initiative` namespace: `attack`, `dash`,
+`disengage`, `dodge`, `help`, `hide`, `shove`, `grapple`, `end_turn`.
+
+### Hidden mobs: `joinsHidden`, `ambush`, `hidden`
+
+```java
+MobTurns.joinsHidden(mob -> mob instanceof Bugbear bugbear && bugbear.lurking());
+boolean started = MobTurns.ambush(bugbear, player);
+boolean stillHidden = MobTurns.hidden(bugbear);
+```
+
+A mob `joinsHidden` matches comes into a fight hidden, the way the Hide action hides: with Checks on a
+Stealth roll whose total enemies' passive Perception is checked against, without as it stands. Only
+while `actions.hide` and `actions.hide_suppresses_targeting` are on.
+
+`ambush` lets the mob start the fight instead of attacking in real time: the fight forms at the
+target with the mob hidden, and everyone on the other side who joins as it forms is surprised (see
+[turns](turns.md#surprise)). It returns false when no fight was started (encounters or turns off,
+the mob already fighting, the target a spectator or in creative); carry on in real time then. A
+target already in a fight: the mob joins that fight hidden, nobody is surprised, and it returns true.
+
+A hidden mob is left off the players' turn strip, its turn shows nobody acting, and it is not on the
+players' target lists. A player can still swing at where it stands, with disadvantage, and a hit
+finds it. Its own first attack has advantage and ends its hiding, and with Checks a player whose
+passive Perception meets its Stealth finds it on that player's turn. `hidden` says whether it is
+still hidden right now.
+
+### Rider and mount
+
+Nothing to register. A mount steered by a mob rider in the same fight acts on its rider's turn: see
+[turns](turns.md#rider-and-mount).
 
 ## Datapack settings
 
@@ -202,4 +315,5 @@ the registry, your `cost()` and `enabled()` decide whether it is offered or grey
 
 - No content. Classes, feats, spells and abilities belong in your mod or your pack.
 - No trigger system yet — you cannot declare "run my action when X happens".
+- No mob AI beyond its own simple turn: a mod's handler decides what its mobs do.
 - No custom UI for your action: it gets the same button every built-in gets, not a widget of its own.

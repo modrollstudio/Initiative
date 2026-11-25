@@ -31,6 +31,7 @@ class ChecksConfigTest {
         ConfigSource source = source("{}");
         assertTrue(ChecksConfig.fromJson(source).enabled());
         assertTrue(ChecksConfig.fromJson(source).blockShortRests());
+        assertTrue(ChecksConfig.fromJson(source).extraAttack());
         assertReported(source, ConfigIssue.Kind.MISSING, "checks");
     }
 
@@ -49,5 +50,22 @@ class ChecksConfigTest {
         ConfigSource source = source("{\"checks\": 7}");
         assertTrue(ChecksConfig.fromJson(source).enabled());
         assertReported(source, ConfigIssue.Kind.INVALID, "checks");
+    }
+
+    @Test
+    void parsesExtraAttack() {
+        assertTrue(ChecksConfig.fromJson(source("{\"checks\": {\"extra_attack\": true}}"))
+                .extraAttack());
+        assertFalse(ChecksConfig.fromJson(source("{\"checks\": {\"extra_attack\": false}}"))
+                .extraAttack());
+    }
+
+    /** A file from before Extra Attack gives a class's attacks, as a fresh install does. */
+    @Test
+    void aFileWithoutExtraAttackGivesIt() {
+        ConfigSource source = source("{\"checks\": {\"enabled\": true, \"block_short_rests\": false}}");
+        ChecksConfig checks = ChecksConfig.fromJson(source);
+        assertTrue(checks.extraAttack());
+        assertReported(source, ConfigIssue.Kind.MISSING, "checks.extra_attack");
     }
 }

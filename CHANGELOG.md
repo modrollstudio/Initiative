@@ -1,5 +1,52 @@
 # Changelog
 
+## [0.3.0] - Unreleased
+
+- **Extra Attack.** With Checks installed, a player whose class has Extra Attack at their level
+  (a level 5 Fighter, Barbarian, Monk, Paladin or Ranger, by Checks' defaults) makes that many
+  attacks with one Attack action. The first attack spends the action, the next ones don't need it,
+  and a bow, crossbow or trident shot counts as one of them. `checks.extra_attack` (on by default)
+  turns it off.
+
+- **Mounted mobs move in a fight.** A mob rider steers through its mount, so with separate turns a
+  spider jockey or a chicken jockey couldn't move at all. A mount steered by a mob rider now acts on
+  its rider's turn: the pair moves together at the mount's speed, against the mount's movement, and
+  each attacks. The mount's own place in the order is passed over, and if the pair splits the mount
+  takes its own turns again from the next round. `turns.mounts_act_with_riders` (on by default)
+  turns it off.
+
+- **Mob turns for other mods.** Mods can now give their mobs more than one plain attack:
+  - `Attacks.register`: several attacks in one Attack action, for a mob's Multiattack. Initiative's
+    own mob turn makes them all, `actions.mob_attack_spacing_ticks` (default 20) apart so each roll
+    shows.
+  - `MobTurns.register`: a mod's own turn for its mobs, taking its own actions, a bonus action and
+    reactions out of turn through the same gate as a player's. A handler that never finishes ends on
+    the mob turn timeout, and one that throws ends its turn. `turns.custom_mob_turns` (on by default)
+    turns all handlers off.
+  - `MobTurns.joinsHidden` and `MobTurns.ambush`: a mob that joins a fight hidden, or starts one from
+    hiding. A hidden mob is left off the players' turn strip, acting marker and target list until
+    it is found; a player can still swing at where it stands, with disadvantage. Its first attack
+    has advantage.
+  - Surprise: the players an ambush catches roll initiative with disadvantage, both dice shown, as in
+    SRD 5.2. With Checks, a player whose passive Perception meets the mob's Stealth isn't surprised.
+    `encounters.surprise` (on by default) turns it off.
+  - `ActionContext.attack` rolls an attack inside an action the way Initiative's own Attack does,
+    `ActionContext.launch` throws a target, and `ActionRegistry.invoke` can take an action for
+    another cost, such as Disengage as a bonus action.
+  - A new cost, `ActionCost.ATTACK`, is one attack of the Attack action. The Attack action now costs
+    `ATTACK` instead of `ACTION` (still `FREE` with `single_attack_per_turn` off); with one attack
+    per action it plays exactly as before.
+
+  See `docs/api.md`. A mob no mod handles takes the same turn as before.
+
+- Clients need 0.3.0 to join a 0.3.0 server.
+
+- Built and tested against Checks 0.2.3. Checks is still optional, but an installed Checks must now
+  be 0.2.2 or newer.
+
+- Built and tested against Critfall 0.2.20, which Checks 0.2.3 needs. Initiative still works with
+  Critfall 0.2.16 or newer.
+
 ## [0.2.2] - 2026-11-05
 
 - **No short rests in a fight.** With Checks installed, a player in an encounter can't take a

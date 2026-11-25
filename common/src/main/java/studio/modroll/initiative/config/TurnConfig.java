@@ -17,7 +17,9 @@ import net.minecraft.util.GsonHelper;
 /**
  * The two turn timeouts are deliberately different lengths: a player's is long enough to read the
  * bar and decide, while a mob's is only a stall-breaker for one that cannot act at all — a mob with
- * an available action already ends its turn the moment it spends it.
+ * an available action already ends its turn the moment it spends it. {@code customMobTurns} lets
+ * mods drive their own mobs' turns; {@code mountsActWithRiders} gives a mount steered by its mob
+ * rider the rider's turn.
  */
 public record TurnConfig(
         boolean enabled,
@@ -28,7 +30,9 @@ public record TurnConfig(
         boolean freezeEnabled,
         boolean actingMarkerEnabled,
         boolean restrictPlayersOffTurn,
-        Set<String> noFreezeTypes) {
+        Set<String> noFreezeTypes,
+        boolean customMobTurns,
+        boolean mountsActWithRiders) {
 
     public static TurnConfig fromJson(ConfigSource source) {
         ConfigSection turns = source.section("turns");
@@ -41,7 +45,9 @@ public record TurnConfig(
                 turns.read("freeze_enabled", BOOLEAN),
                 turns.read("acting_marker_enabled", BOOLEAN),
                 turns.read("restrict_players_off_turn", BOOLEAN),
-                turns.read("no_freeze_types", TurnConfig::noFreezeTypes));
+                turns.read("no_freeze_types", TurnConfig::noFreezeTypes),
+                turns.read("custom_mob_turns", BOOLEAN),
+                turns.read("mounts_act_with_riders", BOOLEAN));
     }
 
     private static Set<String> noFreezeTypes(JsonObject turns, String key) {

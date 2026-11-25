@@ -6,6 +6,7 @@ import java.util.Optional;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
+import studio.modroll.critfall.api.AttackContext;
 import studio.modroll.critfall.api.combat.AttackResult;
 import studio.modroll.critfall.api.combat.ContestResult;
 
@@ -40,6 +41,16 @@ public interface ActionContext {
     void showRoll(AttackResult result, LivingEntity opponent);
 
     void showRoll(ContestResult result, LivingEntity opponent);
+
+    /**
+     * Rolls an attack through Critfall as Initiative's own Attack does (Help, hiding, Dodge, cover, and
+     * range for a projectile or thrown attack) and shows it. Past long range, or into total cover that
+     * blocks attacks, nothing is rolled and it misses.
+     */
+    AttackResult attack(LivingEntity target, AttackContext attack);
+
+    /** Throws target: it spends no movement, provokes nothing, and off its turn is held where it lands. */
+    void launch(LivingEntity target, Vec3 motion);
 
     /** This action's datapack settings, when a pack supplied any. */
     Optional<JsonObject> settings();

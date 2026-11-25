@@ -72,17 +72,18 @@ public final class ChecksScenarios {
 
     /** The Hide scenarios need the lone hider's fight to run on to the watcher's turn. */
     private static final EncounterConfig TIGHT_BUBBLE =
-            new EncounterConfig(true, true, true, false, true, true, true, false, 1.0, 40.0);
+            new EncounterConfig(true, true, true, false, true, true, true, false, 1.0, 40.0, true);
 
-    private static final TurnConfig TURNS = new TurnConfig(true, 1000, 1000, 20.0, 12, false, false, false, Set.of());
+    private static final TurnConfig TURNS =
+            new TurnConfig(true, 1000, 1000, 20.0, 12, false, false, false, Set.of(), true, true);
     private static final ActionConfig ACTIONS = new ActionConfig(
             true, 6.0, true, true, true, 4.0, false, true, true, true, true, true, true, false, 3.0, 0, 0, true, true,
-            3.0, 1.0, 0, 0, true, 8.0, true, 1.0, 0, 0, true, 24.0, 64.0);
+            3.0, 1.0, 0, 0, true, 8.0, true, 1.0, 0, 0, true, 24.0, 64.0, 20);
     /** The rest scenarios need the player by the fire pulled into a fight they took no part in. */
     private static final EncounterConfig PULLING_BUBBLE =
-            new EncounterConfig(true, true, true, false, true, true, false, false, 12.0, 40.0);
+            new EncounterConfig(true, true, true, false, true, true, false, false, 12.0, 40.0, true);
 
-    private static final ChecksConfig CHECKS_ON = new ChecksConfig(true, true);
+    private static final ChecksConfig CHECKS_ON = new ChecksConfig(true, true, true);
     private static final BlockPos FIRE = new BlockPos(1, 1, 1);
     private static final Vec3 BY_THE_FIRE = new Vec3(1.5, 1, 2.5);
     private static final String REST_BLOCKED = "checks.rest.reason.blocked";
@@ -393,7 +394,7 @@ public final class ChecksScenarios {
         if (!prepareWithChecks(helper)) {
             return;
         }
-        InitiativeConfig.overrideChecksForTesting(new ChecksConfig(true, false));
+        InitiativeConfig.overrideChecksForTesting(new ChecksConfig(true, false, true));
         InitiativeConfig.overrideEncountersForTesting(PULLING_BUBBLE);
         Rester rester = rester(helper);
         Player friend = ScenarioSupport.spawnPlayer(helper, 4, 4);
@@ -420,7 +421,7 @@ public final class ChecksScenarios {
 
     /** Checks installed but switched off: the flat bonuses come back. */
     public static void toggledOffUsesFlatBonuses(GameTestHelper helper) {
-        prepare(helper, new ChecksConfig(false, true));
+        prepare(helper, new ChecksConfig(false, true, true));
         requireFlatRolls(helper);
     }
 

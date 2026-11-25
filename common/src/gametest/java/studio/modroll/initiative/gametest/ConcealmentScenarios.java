@@ -37,19 +37,20 @@ public final class ConcealmentScenarios {
      * fight must not end on everyone hiding; {@link #ALL_HIDDEN_ENDS} is the one that lets it.
      */
     private static final EncounterConfig TIGHT_BUBBLE =
-            new EncounterConfig(true, true, true, false, true, true, true, false, 1.0, 8.0);
+            new EncounterConfig(true, true, true, false, true, true, true, false, 1.0, 8.0, true);
 
     private static final EncounterConfig ALL_HIDDEN_ENDS =
-            new EncounterConfig(true, true, true, false, true, true, true, true, 1.0, 8.0);
+            new EncounterConfig(true, true, true, false, true, true, true, true, 1.0, 8.0, true);
     private static final EncounterConfig PROVOKED =
-            new EncounterConfig(true, true, true, true, true, true, true, false, 6.0, 30.0);
-    private static final TurnConfig TURNS = new TurnConfig(true, 1000, 1000, 20.0, 12, false, false, false, Set.of());
+            new EncounterConfig(true, true, true, true, true, true, true, false, 6.0, 30.0, true);
+    private static final TurnConfig TURNS =
+            new TurnConfig(true, 1000, 1000, 20.0, 12, false, false, false, Set.of(), true, true);
     private static final ActionConfig ACTIONS = new ActionConfig(
             true, 6.0, true, true, true, 4.0, true, true, true, true, true, true, true, true, 3.0, 0, 0, true, true,
-            3.0, 1.0, 0, 0, true, 8.0, true, 1.0, 0, 0, true, 24.0, 64.0);
+            3.0, 1.0, 0, 0, true, 8.0, true, 1.0, 0, 0, true, 24.0, 64.0, 20);
     private static final ActionConfig SUPPRESSION_OFF = new ActionConfig(
             true, 6.0, true, true, true, 4.0, true, true, true, true, true, true, true, true, 3.0, 0, 0, false, true,
-            3.0, 1.0, 0, 0, true, 8.0, true, 1.0, 0, 0, true, 24.0, 64.0);
+            3.0, 1.0, 0, 0, true, 8.0, true, 1.0, 0, 0, true, 24.0, 64.0, 20);
 
     private static final List<Integer> PLAYER_FIRST = List.of(20, 1);
     private static final List<Integer> HUSK_FIRST = List.of(1, 20);

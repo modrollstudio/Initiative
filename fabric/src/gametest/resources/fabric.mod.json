@@ -31,7 +31,11 @@
       "studio.modroll.initiative.fabric.gametest.RangedAttackGameTests",
       "studio.modroll.initiative.fabric.gametest.ChecksGameTests",
       "studio.modroll.initiative.fabric.gametest.TeleportGameTests",
-      "studio.modroll.initiative.fabric.gametest.MovementGameTests"
+      "studio.modroll.initiative.fabric.gametest.MovementGameTests",
+      "studio.modroll.initiative.fabric.gametest.MountGameTests",
+      "studio.modroll.initiative.fabric.gametest.MobTurnGameTests",
+      "studio.modroll.initiative.fabric.gametest.HiddenMobGameTests",
+      "studio.modroll.initiative.fabric.gametest.ExtraAttackGameTests"
     ]
   },
   "depends": {

@@ -3,6 +3,7 @@ package studio.modroll.initiative.config;
 import static studio.modroll.initiative.config.ConfigValue.BOOLEAN;
 import static studio.modroll.initiative.config.ConfigValue.INTEGER;
 import static studio.modroll.initiative.config.ConfigValue.NON_NEGATIVE_DOUBLE;
+import static studio.modroll.initiative.config.ConfigValue.NON_NEGATIVE_INTEGER;
 
 public record ActionConfig(
         boolean enabled,
@@ -36,7 +37,8 @@ public record ActionConfig(
         int reelDefenderBonus,
         boolean rangedAttacks,
         double rangedNormalRangeBlocks,
-        double rangedLongRangeBlocks) {
+        double rangedLongRangeBlocks,
+        int mobAttackSpacingTicks) {
 
     public static ActionConfig fromJson(ConfigSource source) {
         ConfigSection actions = source.section("actions");
@@ -80,6 +82,7 @@ public record ActionConfig(
                 actions.read("reel_defender_bonus", INTEGER),
                 actions.read("ranged_attacks", BOOLEAN),
                 normalRange,
-                longRange);
+                longRange,
+                actions.read("mob_attack_spacing_ticks", NON_NEGATIVE_INTEGER));
     }
 }

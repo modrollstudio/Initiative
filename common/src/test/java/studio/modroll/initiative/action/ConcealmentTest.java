@@ -201,6 +201,7 @@ class ConcealmentTest {
                 0,
                 true,
                 24.0,
-                64.0);
+                64.0,
+                20);
     }
 }

@@ -56,14 +56,15 @@ import studio.modroll.initiative.encounter.EncounterManager;
 public final class RangedAttackScenarios {
 
     private static final EncounterConfig TIGHT_BUBBLE =
-            new EncounterConfig(true, true, true, false, true, true, true, true, 1.0, 30.0);
+            new EncounterConfig(true, true, true, false, true, true, true, true, 1.0, 30.0, true);
     /** No encounter can form, so a mob's shot is Critfall's own automatic roll. */
     private static final EncounterConfig NO_ENCOUNTERS =
-            new EncounterConfig(false, true, true, false, true, true, true, true, 1.0, 30.0);
+            new EncounterConfig(false, true, true, false, true, true, true, true, 1.0, 30.0, true);
 
-    private static final TurnConfig TURNS = new TurnConfig(true, 1000, 1000, 20.0, 12, false, false, false, Set.of());
+    private static final TurnConfig TURNS =
+            new TurnConfig(true, 1000, 1000, 20.0, 12, false, false, false, Set.of(), true, true);
     private static final TurnConfig TURNS_HOLDING_PLAYERS =
-            new TurnConfig(true, 1000, 1000, 20.0, 12, false, false, true, Set.of());
+            new TurnConfig(true, 1000, 1000, 20.0, 12, false, false, true, Set.of(), true, true);
 
     private static final double REACH = 1.5;
     private static final double NORMAL_RANGE = 2.5;
@@ -189,7 +190,7 @@ public final class RangedAttackScenarios {
      */
     public static void aFlamingArrowThatHitsSetsTheTargetAlight(GameTestHelper helper) {
         prepare(helper, RANGED, COVER_OFF, TURNS);
-        InitiativeConfig.overrideChecksForTesting(new ChecksConfig(true, true));
+        InitiativeConfig.overrideChecksForTesting(new ChecksConfig(true, true, true));
         if (!WITHOUT_CHECKS && !ChecksIntegration.present()) {
             helper.fail("the GameTest runs must have Checks installed, or be started with -PwithoutChecks");
         }
@@ -708,7 +709,8 @@ public final class RangedAttackScenarios {
                 0,
                 ranged,
                 normal,
-                far);
+                far,
+                20);
     }
 
     /** A real server player, so the draw goes through the loaders' use hooks; standing on the floor, aimed down the lane. */

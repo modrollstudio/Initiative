@@ -28,7 +28,9 @@ class TurnConfigTest {
                     "freeze_enabled": true,
                     "acting_marker_enabled": false,
                     "restrict_players_off_turn": false,
-                    "no_freeze_types": %s
+                    "no_freeze_types": %s,
+                    "custom_mob_turns": false,
+                    "mounts_act_with_riders": false
                 }}""".formatted(timeoutTicks, mobTimeoutTicks, bonusPerSpeed, maxBonus, noFreezeTypes);
     }
 
@@ -45,6 +47,8 @@ class TurnConfigTest {
         assertFalse(config.actingMarkerEnabled());
         assertFalse(config.restrictPlayersOffTurn());
         assertEquals(Set.of(), config.noFreezeTypes());
+        assertFalse(config.customMobTurns());
+        assertFalse(config.mountsActWithRiders());
         assertNothingReported(source);
     }
 
@@ -213,5 +217,17 @@ class TurnConfigTest {
         TurnConfig config = TurnConfig.fromJson(source);
         assertEquals(100, config.turnTimeoutTicks());
         assertReported(source, ConfigIssue.Kind.UNKNOWN, "turns.turn_timeout_seconds");
+    }
+
+    /** A file from before mob turns lets mods drive their mobs and mounts share their riders' turns. */
+    @Test
+    void aFileWithoutTheMobTurnKeysTurnsThemOn() {
+        ConfigSource source = source(complete("100", "20.0", "12")
+                .replaceAll(",\\s*\"custom_mob_turns\": false,\\s*\"mounts_act_with_riders\": false", ""));
+        TurnConfig config = TurnConfig.fromJson(source);
+        assertTrue(config.customMobTurns());
+        assertTrue(config.mountsActWithRiders());
+        assertReported(source, ConfigIssue.Kind.MISSING, "turns.custom_mob_turns");
+        assertReported(source, ConfigIssue.Kind.MISSING, "turns.mounts_act_with_riders");
     }
 }

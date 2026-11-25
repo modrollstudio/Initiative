@@ -37,11 +37,12 @@ import studio.modroll.initiative.ui.ActionUiSnapshots;
 public final class GrappleScenarios {
 
     private static final EncounterConfig TIGHT_BUBBLE =
-            new EncounterConfig(true, true, true, false, true, true, true, true, 1.0, 40.0);
-    private static final TurnConfig TURNS = new TurnConfig(true, 1000, 1000, 20.0, 12, false, false, false, Set.of());
+            new EncounterConfig(true, true, true, false, true, true, true, true, 1.0, 40.0, true);
+    private static final TurnConfig TURNS =
+            new TurnConfig(true, 1000, 1000, 20.0, 12, false, false, false, Set.of(), true, true);
     private static final ActionConfig ACTIONS = new ActionConfig(
             true, 6.0, true, true, true, 4.0, false, true, true, true, true, true, true, false, 3.0, 0, 0, true, true,
-            3.0, 1.0, 0, 0, true, 8.0, true, 1.0, 0, 0, true, 24.0, 64.0);
+            3.0, 1.0, 0, 0, true, 8.0, true, 1.0, 0, 0, true, 24.0, 64.0, 20);
     private static final GrappleConfig GRAPPLE = new GrappleConfig(true, 3.0, 0, 0, 5.0, true, 0, 0);
     private static final GrappleConfig GRAPPLE_OFF = new GrappleConfig(false, 3.0, 0, 0, 5.0, true, 0, 0);
 

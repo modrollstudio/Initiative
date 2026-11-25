@@ -57,6 +57,7 @@
   "initiative.ui.cost.movement": "Costs movement",
   "initiative.ui.cost.reaction": "Costs your reaction",
   "initiative.ui.cost.free": "Costs nothing",
+  "initiative.ui.cost.attack": "Costs one attack of your Attack action",
   "initiative.ui.pick_target": "%s: aim at a target, right click to cancel",
   "initiative.ui.pick_position": "%s: aim at a block, right click to cancel",
   "initiative.ui.target_ready": "%s — left click to confirm",

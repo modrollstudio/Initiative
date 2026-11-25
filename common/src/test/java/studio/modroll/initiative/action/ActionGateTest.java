@@ -14,7 +14,8 @@ import studio.modroll.initiative.api.ActionTargeting.Side;
 class ActionGateTest {
 
     private static ActionStatus resource(ActionCost cost, boolean available) {
-        return ActionGate.resourceRejection(cost, available, available, available, available ? 6.0 : 0.0, 1.0);
+        return ActionGate.resourceRejection(
+                cost, available, available, available, available, available ? 6.0 : 0.0, 1.0);
     }
 
     @Test
@@ -23,6 +24,7 @@ class ActionGateTest {
         assertEquals(ActionStatus.NO_BONUS_ACTION, resource(ActionCost.BONUS_ACTION, false));
         assertEquals(ActionStatus.NO_REACTION, resource(ActionCost.REACTION, false));
         assertEquals(ActionStatus.NO_MOVEMENT, resource(ActionCost.MOVEMENT, false));
+        assertEquals(ActionStatus.NO_ACTION, resource(ActionCost.ATTACK, false));
     }
 
     @Test
@@ -31,6 +33,39 @@ class ActionGateTest {
         assertNull(resource(ActionCost.BONUS_ACTION, true));
         assertNull(resource(ActionCost.REACTION, true));
         assertNull(resource(ActionCost.MOVEMENT, true));
+        assertNull(resource(ActionCost.ATTACK, true));
+    }
+
+    @Test
+    void anAttackLeftOpensTheAttackAfterTheActionIsSpent() {
+        assertNull(ActionGate.resourceRejection(ActionCost.ATTACK, false, true, false, false, 0.0, 0.0));
+        assertEquals(
+                ActionStatus.NO_ACTION,
+                ActionGate.resourceRejection(ActionCost.ACTION, false, true, false, false, 0.0, 0.0));
+    }
+
+    @Test
+    void anAttackChargesThePoolBeforeTheAction() {
+        TurnBudget budget = new TurnBudget();
+        budget.reset(6.0);
+        ActionGate.charge(budget, ActionCost.ATTACK, 0.0, 2);
+        assertFalse(budget.actionAvailable());
+        assertEquals(1, budget.attacksLeft());
+        ActionGate.charge(budget, ActionCost.ATTACK, 0.0, 2);
+        assertFalse(budget.attackAvailable());
+    }
+
+    /** What an action taken as a bonus action checks and pays: the bonus action, never the action. */
+    @Test
+    void aBonusActionCostLeavesTheActionAlone() {
+        assertEquals(
+                ActionStatus.NO_BONUS_ACTION,
+                ActionGate.resourceRejection(ActionCost.BONUS_ACTION, true, true, false, true, 6.0, 0.0));
+        TurnBudget budget = new TurnBudget();
+        budget.reset(6.0);
+        ActionGate.charge(budget, ActionCost.BONUS_ACTION, 0.0, 1);
+        assertTrue(budget.actionAvailable());
+        assertFalse(budget.bonusActionAvailable());
     }
 
     @Test
@@ -40,10 +75,10 @@ class ActionGateTest {
 
     @Test
     void movementIsComparedAgainstTheDeclaredCost() {
-        assertNull(ActionGate.resourceRejection(ActionCost.MOVEMENT, false, false, false, 2.0, 2.0));
+        assertNull(ActionGate.resourceRejection(ActionCost.MOVEMENT, false, false, false, false, 2.0, 2.0));
         assertEquals(
                 ActionStatus.NO_MOVEMENT,
-                ActionGate.resourceRejection(ActionCost.MOVEMENT, false, false, false, 1.9, 2.0));
+                ActionGate.resourceRejection(ActionCost.MOVEMENT, false, false, false, false, 1.9, 2.0));
     }
 
     @Test
@@ -53,6 +88,7 @@ class ActionGateTest {
         assertTrue(ActionGate.turnGated(ActionCost.BONUS_ACTION));
         assertTrue(ActionGate.turnGated(ActionCost.MOVEMENT));
         assertTrue(ActionGate.turnGated(ActionCost.FREE));
+        assertTrue(ActionGate.turnGated(ActionCost.ATTACK));
     }
 
     @Test
