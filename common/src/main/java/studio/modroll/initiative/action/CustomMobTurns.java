@@ -25,9 +25,13 @@ public final class CustomMobTurns {
         HIDERS.add(hides);
     }
 
+    public static boolean enabled() {
+        return ActionEconomy.active() && InitiativeConfig.turns().customMobTurns();
+    }
+
     /** The first handler that takes this mob, or null for Initiative's own turn. */
     static MobTurn handlerFor(Mob mob) {
-        if (!InitiativeConfig.turns().customMobTurns()) {
+        if (!enabled()) {
             return null;
         }
         for (Handler handler : HANDLERS) {

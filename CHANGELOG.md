@@ -1,6 +1,11 @@
 # Changelog
 
-## [0.3.0] - Unreleased
+## [0.3.1] - Unreleased
+
+- `MobTurns.enabled()` tells mods whether their turn handlers will run: true only with
+  `turns.enabled`, `turns.custom_mob_turns` and `actions.enabled` all on. See `docs/api.md`.
+
+## [0.3.0] - 2026-11-25
 
 - **Extra Attack.** With Checks installed, a player whose class has Extra Attack at their level
   (a level 5 Fighter, Barbarian, Monk, Paladin or Ranger, by Checks' defaults) makes that many

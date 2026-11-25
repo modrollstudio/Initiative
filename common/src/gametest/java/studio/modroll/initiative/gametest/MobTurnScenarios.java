@@ -197,6 +197,9 @@ public final class MobTurnScenarios {
                     if (strikes != 1) {
                         helper.fail("the handler's own action must run once but ran " + strikes + " times");
                     }
+                    if (!MobTurns.enabled()) {
+                        helper.fail("MobTurns.enabled() must be true while a handler takes the turn");
+                    }
                     if (!encounter.flags().hasReaction(player.getUUID())) {
                         helper.fail("a mob that disengaged must provoke no opportunity attack as it walks off");
                     }
@@ -275,6 +278,9 @@ public final class MobTurnScenarios {
                     if (attacks.size() != 1) {
                         helper.fail("with custom_mob_turns off the mob must make Initiative's one attack, made "
                                 + attacks.size());
+                    }
+                    if (MobTurns.enabled()) {
+                        helper.fail("MobTurns.enabled() must be false with custom_mob_turns off");
                     }
                     cleanUp(player, husk);
                 })
