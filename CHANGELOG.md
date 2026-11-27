@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.3.3] - 2026-11-27
+
+- For mods that run actions of their own, such as Critfall: Spells. See `docs/api.md`.
+  - `Action.builder(...).listed(false)`: an action with no bar button and no command.
+  - `ActionRegistry.check(...)`: the gate's answer without performing the action.
+  - `Turns.onTurnStart` and `Turns.onTurnEnd`: told as each turn passes on.
+  - `Encounters.inFight` and `Encounters.engage`: whether a creature is in a fight, and starting one for a
+    hurt Initiative doesn't see.
+  - `ActionContext.teleport`: a move that costs no movement and provokes nothing.
+  - `ActionContext.prepareAttack`: an attack with the fight's rules, for a hit that lands later.
+
 ## [0.3.2] - 2026-11-27
 
 - `Turns.holdUntil(participant, landed)` holds a fight until a hit on its way lands: no turn ends or

@@ -1,9 +1,11 @@
 package studio.modroll.initiative.api;
 
 import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LivingEntity;
 import studio.modroll.initiative.encounter.EncounterManager;
+import studio.modroll.initiative.turn.TurnEvents;
 
 /** The turns of a fight, for mods whose actions take time to land. */
 public final class Turns {
@@ -17,6 +19,20 @@ public final class Turns {
      * ActionStatus#WAITING}. Movement goes on. {@code landed} is asked every tick, so it must turn true soon, also
      * when the hit is dropped. Does nothing when {@code participant} is in no fight. Since 0.3.2.
      */
+    /**
+     * Tells {@code listener} whose turn starts, as a fight's turn passes to it and before it acts: for what lasts some
+     * rounds, or happens at the start of a turn. A listener that throws is logged and skipped. Register during mod
+     * construction. Since 0.3.3.
+     */
+    public static void onTurnStart(Consumer<LivingEntity> listener) {
+        TurnEvents.onStart(listener);
+    }
+
+    /** Tells {@code listener} whose turn ended: it passed to the next participant, or the fight is over. Since 0.3.3. */
+    public static void onTurnEnd(Consumer<LivingEntity> listener) {
+        TurnEvents.onEnd(listener);
+    }
+
     public static void holdUntil(LivingEntity participant, BooleanSupplier landed) {
         if (participant.level() instanceof ServerLevel level) {
             EncounterManager.encounterContaining(level, participant.getUUID())

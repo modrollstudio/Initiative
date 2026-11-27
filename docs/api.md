@@ -40,6 +40,9 @@ it a command — the same treatment its own Attack and Shove get.
 
 Ids are unique: registering an id twice throws rather than quietly replacing someone else's action.
 
+An action your own controls start, such as a spell cast from your own wheel, can stay off the bar and the
+commands with `.listed(false)` (since 0.3.3). It is only ever taken through `ActionRegistry.invoke`.
+
 ## The contract, field by field
 
 | Field | Meaning |
@@ -107,6 +110,8 @@ void grantMovement(double blocks);       // Dash and its kin
 void showRoll(AttackResult result, LivingEntity opponent);
 void showRoll(ContestResult result, LivingEntity opponent);
 AttackResult attack(LivingEntity target, AttackContext attack);
+Optional<AttackContext> prepareAttack(LivingEntity target, AttackContext attack);   // since 0.3.3
+void teleport(LivingEntity entity, Vec3 to);                                       // since 0.3.3
 void launch(LivingEntity target, Vec3 motion);
 Optional<JsonObject> settings();         // this action's datapack file
 ```
@@ -118,6 +123,13 @@ advantage and disadvantage still cancel. A projectile or thrown context also get
 disadvantage past `ranged_normal_range_blocks` or with a hostile in reach, and past
 `ranged_long_range_blocks` nothing is rolled and it misses. Into total cover that blocks attacks it
 misses with nothing rolled as well. The dice are Critfall's: your damage dice, your mode, its roll.
+
+`prepareAttack` is `attack` for a hit that lands later, such as a spell's bolt: the same modes and cover on the
+context, nothing rolled. Roll it yourself with Critfall's `RollService.rollAttack` and land it on arrival. It is
+empty where `attack` would miss with nothing rolled. Nothing is shown and a hidden target stays hidden.
+
+`teleport` moves `entity` to `to`, as Misty Step does: it spends no movement and provokes no opportunity
+attack, and a player moved off their turn is held where they land.
 
 `launch` throws `target` with `motion`. The flight is not the target's own movement: it spends none
 of its budget and provokes no opportunity attack, and a player thrown off their turn flies instead of
@@ -179,6 +191,16 @@ ActionRegistry.invoke(level, mob, ResourceLocation.fromNamespaceAndPath("initiat
 The gate then checks and charges the bonus action and leaves the action alone: Disengage or Hide as
 a bonus action. The rest of the gate is unchanged.
 
+To ask the gate without performing anything, for example before something you show first:
+
+```java
+Optional<ActionStatus> refusal =
+        ActionRegistry.check(level, caster, CAST, ActionRequest.none(), ActionCost.BONUS_ACTION);
+```
+
+It runs steps 1 to 8 and answers with the status `invoke` would refuse with, or empty when it would
+perform. Pass `null` for the action's own cost. Since 0.3.3.
+
 ## Holding the fight for a hit
 
 Since 0.3.2. An action whose hit takes time to land, such as a spell's bolt, can hold the fight until it
@@ -193,6 +215,24 @@ reaction are refused with `WAITING` ("Wait for the hit to land"), a mob's own tu
 timeout stops. Movement goes on. The supplier is asked every tick and the hold ends once it answers
 true, so make it true when the hit lands and when it is dropped. A participant in no fight holds
 nothing. Several holds stack: the fight goes on when the last one ends.
+
+## Turns and fights
+
+Since 0.3.3:
+
+```java
+Turns.onTurnStart(participant -> ...);   // its turn starts, before it acts
+Turns.onTurnEnd(participant -> ...);     // its turn passed on, or the fight is over
+Encounters.inFight(entity);
+Encounters.engage(attacker, target);
+```
+
+- **Turn listeners** hear each turn change once, the end of the old turn first. For what lasts some rounds,
+  or happens at the start or end of a turn. A listener that throws is logged and skipped. Register during
+  mod construction.
+- **`engage`** is for a hurt Initiative can't see, such as damage dealt through Critfall's `RollService`, which
+  never starts a fight: call it before the hurt, while both are alive, and a fight starts or takes them in by
+  the rules a vanilla hit follows.
 
 ## Mob turns
 

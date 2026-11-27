@@ -49,6 +49,19 @@ public interface ActionContext {
      */
     AttackResult attack(LivingEntity target, AttackContext attack);
 
+    /**
+     * The attack as this fight would roll it, for one that lands later, such as a spell's bolt: Help, hiding, Dodge,
+     * range and cover applied. Roll it with Critfall's {@code RollService.rollAttack}. Empty past long range, or into
+     * total cover that blocks attacks: it misses with nothing rolled. Since 0.3.3.
+     */
+    Optional<AttackContext> prepareAttack(LivingEntity target, AttackContext attack);
+
+    /**
+     * Moves {@code entity} to {@code to}, as Misty Step does: it spends no movement, provokes nothing, and off its
+     * turn is held where it lands. Since 0.3.3.
+     */
+    void teleport(LivingEntity entity, Vec3 to);
+
     /** Throws target: it spends no movement, provokes nothing, and off its turn is held where it lands. */
     void launch(LivingEntity target, Vec3 motion);
 

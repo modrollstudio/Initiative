@@ -37,7 +37,10 @@ public final class ActionUiSnapshots {
         }
         List<ActionUiSnapshot.Entry> entries = new ArrayList<>();
         for (Action action : ActionRegistry.all()) {
-            if (action.cost() == ActionCost.REACTION || !action.enabled() || !action.availableTo(player)) {
+            if (action.cost() == ActionCost.REACTION
+                    || !action.listed()
+                    || !action.enabled()
+                    || !action.availableTo(player)) {
                 continue; // reactions are triggered; a disabled or inapplicable action does not exist here
             }
             entries.add(entry(level, encounter, player, action));
