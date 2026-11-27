@@ -1,12 +1,12 @@
 # Changelog
 
-## [0.3.2] - Unreleased
+## [0.3.2] - 2026-11-27
 
 - `Turns.holdUntil(participant, landed)` holds a fight until a hit on its way lands: no turn ends or
   times out, and actions other than reactions are refused with the new `ActionStatus.WAITING` ("Wait
   for the hit to land"). For Critfall: Spells, whose bolts fly before they hit. See `docs/api.md`.
 
-## [0.3.1] - Unreleased
+## [0.3.1] - 2026-11-25
 
 - `MobTurns.enabled()` tells mods whether their turn handlers will run: true only with
   `turns.enabled`, `turns.custom_mob_turns` and `actions.enabled` all on. See `docs/api.md`.
