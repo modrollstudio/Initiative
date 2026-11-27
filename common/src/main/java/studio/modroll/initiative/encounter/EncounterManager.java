@@ -43,6 +43,7 @@ import studio.modroll.initiative.turn.InitiativeDerivation;
 import studio.modroll.initiative.turn.InitiativeEntry;
 import studio.modroll.initiative.turn.OffTurnRestriction;
 import studio.modroll.initiative.turn.SkippedTurns;
+import studio.modroll.initiative.turn.TurnEvents;
 import studio.modroll.initiative.turn.TurnTimeout;
 import studio.modroll.initiative.ui.ActionUiSync;
 
@@ -246,6 +247,7 @@ public final class EncounterManager {
                 Concealment.loseTrack(level, encounter);
             }
             if (lostTrack || encounter.isOver()) {
+                TurnEvents.over(level, encounter);
                 TurnOrderSync.encounterEnding(level, encounter);
                 ActionUiSync.encounterEnding(level, encounter);
                 releaseAll(level, encounter);
@@ -257,6 +259,7 @@ public final class EncounterManager {
                     if (!encounter.held()) {
                         encounter.turnOrder().tick(TurnTimeout.forCurrentActor(level, encounter.turnOrder(), turns));
                     }
+                    TurnEvents.reconcile(level, encounter);
                 }
                 ActionEconomy.tick(level, encounter);
                 SkippedTurns.announce(level, encounter);

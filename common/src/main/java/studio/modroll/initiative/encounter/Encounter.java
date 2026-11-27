@@ -42,6 +42,8 @@ public final class Encounter {
     private final Map<UUID, TurnBudget> budgets = new HashMap<>();
     private final EncounterFlags flags = new EncounterFlags();
     private final List<BooleanSupplier> holds = new ArrayList<>();
+    private UUID startedTurn;
+    private int startedRound = -1;
     private final Map<UUID, ActionUiSnapshot> lastActionUiSnapshots = new LinkedHashMap<>();
     private TurnOrderSnapshot lastHudSnapshot;
     private int budgetRound = -1;
@@ -199,6 +201,20 @@ public final class Encounter {
 
     public EncounterFlags flags() {
         return flags;
+    }
+
+    /** Whose turn the turn listeners were last told started, or null. */
+    public UUID startedTurn() {
+        return startedTurn;
+    }
+
+    public int startedRound() {
+        return startedRound;
+    }
+
+    public void startTurn(UUID participant, int round) {
+        startedTurn = participant;
+        startedRound = round;
     }
 
     /** Holds the fight until {@code landed} answers true. */

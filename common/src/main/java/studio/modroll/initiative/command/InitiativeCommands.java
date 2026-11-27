@@ -37,7 +37,7 @@ public final class InitiativeCommands {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         LiteralArgumentBuilder<CommandSourceStack> root = Commands.literal("initiative");
         for (Action action : ActionRegistry.all()) {
-            if (action.cost() == ActionCost.REACTION) {
+            if (action.cost() == ActionCost.REACTION || !action.listed()) {
                 continue; // reactions are triggered, never typed
             }
             root.then(branch(action));

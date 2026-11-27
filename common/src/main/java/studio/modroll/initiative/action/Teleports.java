@@ -4,6 +4,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
 import studio.modroll.initiative.config.InitiativeConfig;
 import studio.modroll.initiative.encounter.Encounter;
@@ -58,6 +59,14 @@ public final class Teleports {
         } finally {
             movingAsInitiative = false;
         }
+    }
+
+    /** After a move that costs nothing: the turn's movement and the off-turn hold both go on from where it landed. */
+    static void settle(Encounter encounter, LivingEntity entity) {
+        if (entity.getUUID().equals(encounter.turnOrder().currentTurn().orElse(null))) {
+            encounter.setMovementAnchor(entity.position());
+        }
+        OffTurnRestriction.moveAnchor(entity.getUUID(), entity.position());
     }
 
     /**

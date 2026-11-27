@@ -56,6 +56,14 @@ public interface Action {
         return null;
     }
 
+    /**
+     * Whether the action has a bar button and a command. An unlisted one is taken only through {@link
+     * ActionRegistry#invoke}, such as a spell cast that another mod's own controls start. Since 0.3.3.
+     */
+    default boolean listed() {
+        return true;
+    }
+
     static Builder builder(ResourceLocation id) {
         return new Builder(id);
     }
@@ -72,6 +80,7 @@ public interface Action {
         private String successKey;
         private String failureKey;
         private String commandLiteral;
+        private boolean listed = true;
 
         private Builder(ResourceLocation id) {
             this.id = id;
@@ -113,6 +122,12 @@ public interface Action {
             return this;
         }
 
+        /** False leaves the action off the bar and the commands. Since 0.3.3. */
+        public Builder listed(boolean listed) {
+            this.listed = listed;
+            return this;
+        }
+
         /** For an action only some actors ever have, like escaping a grapple. */
         public Builder availableTo(Predicate<LivingEntity> availableTo) {
             this.availableTo = availableTo;
@@ -138,7 +153,8 @@ public interface Action {
                     effect,
                     successKey,
                     failureKey,
-                    commandLiteral);
+                    commandLiteral,
+                    listed);
         }
     }
 }

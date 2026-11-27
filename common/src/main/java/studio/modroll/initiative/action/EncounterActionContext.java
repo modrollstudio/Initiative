@@ -100,6 +100,17 @@ record EncounterActionContext(
     }
 
     @Override
+    public Optional<AttackContext> prepareAttack(LivingEntity target, AttackContext attack) {
+        return Optional.ofNullable(ActionEconomy.prepareAttack(level, encounter, actor, target, attack));
+    }
+
+    @Override
+    public void teleport(LivingEntity entity, Vec3 to) {
+        Teleports.moveAsInitiative(entity, to);
+        Teleports.settle(encounter, entity);
+    }
+
+    @Override
     public void launch(LivingEntity target, Vec3 motion) {
         Launches.launch(target, motion);
     }
