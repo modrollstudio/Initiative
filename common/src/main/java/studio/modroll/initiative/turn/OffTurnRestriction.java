@@ -108,6 +108,11 @@ public final class OffTurnRestriction {
         ANCHORS.clear();
     }
 
+    /** A held player that Initiative's own rules moved, such as by a free teleport, is held where it landed. */
+    public static void moveAnchor(UUID participant, Vec3 to) {
+        ANCHORS.computeIfPresent(participant, (id, anchor) -> to);
+    }
+
     public static boolean isHeld(UUID participant) {
         return ANCHORS.containsKey(participant);
     }

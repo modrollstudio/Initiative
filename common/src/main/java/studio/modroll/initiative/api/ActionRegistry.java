@@ -59,6 +59,17 @@ public final class ActionRegistry {
         return ActionGate.invoke(level, actor, id, request, as);
     }
 
+    /**
+     * The gate's answer to {@link #invoke(ServerLevel, LivingEntity, ResourceLocation, ActionRequest, ActionCost)}
+     * without performing anything: the status it would refuse with, or empty when it would perform. So a mod can
+     * refuse before something it shows first, such as a spell's wind up. {@code as} may be null for the action's
+     * own cost. Since 0.3.3.
+     */
+    public static Optional<ActionStatus> check(
+            ServerLevel level, LivingEntity actor, ResourceLocation id, ActionRequest request, ActionCost as) {
+        return Optional.ofNullable(ActionGate.check(level, actor, id, request, as));
+    }
+
     /** Test-scope only, mirroring Critfall's {@code RollService.setRoller} convention. */
     public static void clearForTesting() {
         synchronized (ACTIONS) {

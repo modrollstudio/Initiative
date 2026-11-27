@@ -52,6 +52,19 @@ public final class ActionGate {
         return result;
     }
 
+    /** What {@link #invoke} would refuse with, or null when it would perform the action. */
+    public static ActionStatus check(
+            ServerLevel level, LivingEntity actor, ResourceLocation id, ActionRequest request, ActionCost as) {
+        Action action = ActionRegistry.get(id).orElse(null);
+        if (action == null) {
+            return ActionStatus.DISABLED;
+        }
+        Encounter encounter =
+                EncounterManager.encounterContaining(level, actor.getUUID()).orElse(null);
+        ActionStatus rejection = availability(encounter, actor, action, as != null ? as : action.cost());
+        return rejection != null ? rejection : targetRejection(action.targeting(), encounter, actor, request);
+    }
+
     /**
      * The gate up to targeting — economy, own toggle, encounter, turn, cost — as a status, or null
      * when the action may be attempted. The UI asks the same question to grey a button that

@@ -199,11 +199,11 @@ public final class ActionEconomy {
     }
 
     /**
-     * A mod action's attack: the Attack action's roll, its mode combined with the attack's own the 5e
-     * way, and a projectile or thrown attack's range rules. What can't be attacked at all — past long
-     * range, or into total cover that blocks attacks — rolls nothing and misses.
+     * A mod action's attack before it rolls: the Attack action's mode combined with the attack's own the 5e way, a
+     * projectile or thrown attack's range rules, and cover. Null for what can't be attacked at all: past long range, or
+     * into total cover that blocks attacks.
      */
-    static AttackResult attackFor(
+    static AttackContext prepareAttack(
             ServerLevel level, Encounter encounter, LivingEntity attacker, LivingEntity target, AttackContext attack) {
         ActionConfig actions = InitiativeConfig.actions();
         CoverConfig cover = InitiativeConfig.cover();
@@ -211,7 +211,7 @@ public final class ActionEconomy {
         double range = attacker.position().distanceTo(target.position());
         if ((attack.isRanged() && range > actions.rangedLongRangeBlocks())
                 || (tier == Cover.Tier.TOTAL && cover.totalCoverBlocksAttack())) {
-            return new AttackResult(AttackOutcome.MISS, 0, 0, 0, 0);
+            return null;
         }
         boolean advantage = spendAttackerAdvantage(encounter, actions, attacker) || attack.mode() == RollMode.ADVANTAGE;
         boolean disadvantage = attack.mode() == RollMode.DISADVANTAGE
@@ -225,7 +225,17 @@ public final class ActionEconomy {
         if (acBonus != 0) {
             rolled = rolled.withDefenderAcBonus(attack.defenderAcBonus() + acBonus);
         }
-        AttackResult result = RollService.performAttack(attacker, target, rolled);
+        return rolled;
+    }
+
+    /** A mod action's attack, rolled and landed: what can't be attacked at all rolls nothing and misses. */
+    static AttackResult attackFor(
+            ServerLevel level, Encounter encounter, LivingEntity attacker, LivingEntity target, AttackContext attack) {
+        AttackContext prepared = prepareAttack(level, encounter, attacker, target, attack);
+        if (prepared == null) {
+            return new AttackResult(AttackOutcome.MISS, 0, 0, 0, 0);
+        }
+        AttackResult result = RollService.performAttack(attacker, target, prepared);
         if (result.isHit()) {
             encounter.flags().breakHidden(target.getUUID());
         }

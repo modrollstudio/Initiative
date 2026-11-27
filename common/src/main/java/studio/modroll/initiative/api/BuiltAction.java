@@ -19,7 +19,8 @@ record BuiltAction(
         Function<ActionContext, ActionResult> effect,
         String successKey,
         String failureKey,
-        String commandLiteral)
+        String commandLiteral,
+        boolean listed)
         implements Action {
 
     @Override
