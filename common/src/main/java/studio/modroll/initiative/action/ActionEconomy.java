@@ -56,7 +56,8 @@ public final class ActionEconomy {
         INVALID_TARGET,
         NOT_YOUR_TURN,
         NO_ACTION,
-        TOTAL_COVER
+        TOTAL_COVER,
+        WAITING
     }
 
     /** The swing is vanilla's: Initiative is not driving this one and must not cancel it. */
@@ -78,7 +79,8 @@ public final class ActionEconomy {
         NO_ACTION,
         INVALID_TARGET,
         OUT_OF_REACH,
-        MISSING_ITEM
+        MISSING_ITEM,
+        WAITING
     }
 
     public record HideAttempt(ActionOutcome status, boolean hidden) {}
@@ -160,6 +162,7 @@ public final class ActionEconomy {
             case OUT_OF_REACH -> ActionOutcome.OUT_OF_REACH;
             case MISSING_ITEM, HANDS_FULL -> ActionOutcome.MISSING_ITEM;
             case INACTIVE -> ActionOutcome.INACTIVE;
+            case WAITING -> ActionOutcome.WAITING;
         };
     }
 
@@ -172,6 +175,7 @@ public final class ActionEconomy {
             case INVALID_TARGET, OUT_OF_REACH, MISSING_ITEM, HANDS_FULL -> AttackStatus.INVALID_TARGET;
             case TOTAL_COVER -> AttackStatus.TOTAL_COVER;
             case INACTIVE, DISABLED -> AttackStatus.INACTIVE;
+            case WAITING -> AttackStatus.WAITING;
         };
     }
 
@@ -422,6 +426,9 @@ public final class ActionEconomy {
         LivingEntity mount = actingMount(level, encounter, current);
         LivingEntity mover = mount != null ? mount : actor;
         trackMovement(level, encounter, mover, budgetOf(encounter, mover));
+        if (encounter.held()) {
+            return;
+        }
         boolean done = takeTurn(level, encounter, actor, false);
         if (mount != null) {
             done = takeTurn(level, encounter, mount, done) && done;
@@ -625,6 +632,7 @@ public final class ActionEconomy {
                     case NO_ACTION -> "initiative.action.no_action";
                     case INVALID_TARGET -> "initiative.action.invalid_target";
                     case TOTAL_COVER -> "initiative.action.total_cover";
+                    case WAITING -> "initiative.action.waiting";
                     default -> null;
                 };
         if (key != null) {

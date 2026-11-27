@@ -15,5 +15,7 @@ public enum ActionStatus {
     OUT_OF_REACH,
     MISSING_ITEM,
     HANDS_FULL,
-    TOTAL_COVER
+    TOTAL_COVER,
+    /** The fight waits for a hit on its way, held by {@link Turns#holdUntil}. Since 0.3.2. */
+    WAITING
 }

@@ -280,6 +280,9 @@ public final class RangedAttacks {
         if (!encounter.turnOrder().isActing(shooter.getUUID())) {
             return AttackStatus.NOT_YOUR_TURN;
         }
+        if (encounter.held()) {
+            return AttackStatus.WAITING;
+        }
         if (costsAction(shooter, InitiativeConfig.actions())
                 && !ActionEconomy.budgetOf(encounter, shooter).attackAvailable()) {
             return AttackStatus.NO_ACTION;

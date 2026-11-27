@@ -78,6 +78,9 @@ public final class ActionGate {
         if (turnGated && !encounter.turnOrder().isActing(actor.getUUID())) {
             return ActionStatus.NOT_YOUR_TURN;
         }
+        if (turnGated && encounter.held()) {
+            return ActionStatus.WAITING;
+        }
         TurnBudget budget = turnGated ? actingBudget(encounter, actor) : null;
         return resourceRejection(
                 cost,

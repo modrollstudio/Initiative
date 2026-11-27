@@ -152,11 +152,13 @@ Every invocation runs the same ordered checks. The first one that fails is the s
 3. the actor is in an encounter — else `NOT_IN_ENCOUNTER`;
 4. `availableTo(actor)` — else `DISABLED`;
 5. it is the actor's turn (skipped for `REACTION`) — else `NOT_YOUR_TURN`;
-6. the cost's resource is available — else `NO_ACTION` / `NO_BONUS_ACTION` / `NO_REACTION` /
+6. no hit on its way holds the fight (skipped for `REACTION`, see [Holding the fight for a
+   hit](#holding-the-fight-for-a-hit)) — else `WAITING`;
+7. the cost's resource is available — else `NO_ACTION` / `NO_BONUS_ACTION` / `NO_REACTION` /
    `NO_MOVEMENT`;
-7. targeting is satisfied — else `INVALID_TARGET` / `OUT_OF_REACH`;
-8. **your effect runs**;
-9. the cost is charged, only if the result is `PERFORMED`.
+8. targeting is satisfied — else `INVALID_TARGET` / `OUT_OF_REACH`;
+9. **your effect runs**;
+10. the cost is charged, only if the result is `PERFORMED`.
 
 Invoke one yourself with:
 
@@ -176,6 +178,21 @@ ActionRegistry.invoke(level, mob, ResourceLocation.fromNamespaceAndPath("initiat
 
 The gate then checks and charges the bonus action and leaves the action alone: Disengage or Hide as
 a bonus action. The rest of the gate is unchanged.
+
+## Holding the fight for a hit
+
+Since 0.3.2. An action whose hit takes time to land, such as a spell's bolt, can hold the fight until it
+does:
+
+```java
+Turns.holdUntil(caster, () -> bolt.landed());
+```
+
+While the hold lasts, the turn neither ends nor moves on: End Turn and every other action but a
+reaction are refused with `WAITING` ("Wait for the hit to land"), a mob's own turn waits, and the turn
+timeout stops. Movement goes on. The supplier is asked every tick and the hold ends once it answers
+true, so make it true when the hit lands and when it is dropped. A participant in no fight holds
+nothing. Several holds stack: the fight goes on when the last one ends.
 
 ## Mob turns
 
