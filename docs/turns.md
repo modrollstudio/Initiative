@@ -56,6 +56,10 @@ end on their own after a timeout, and **the timeout depends on who is acting**:
   covers a mob that *cannot* act — nothing in reach, no path — and there is no reason to make the
   table wait a player's length for that.
 
+While another mod holds the fight for a hit on its way (`Turns.holdUntil`, such as a spell's bolt),
+the clock stops and the turn can't end, so the hit lands on the turn that made it; see
+[the API](api.md#holding-the-fight-for-a-hit).
+
 The countdown the clients display is read off the same rule, so the timer that fires and the timer
 on screen are always the same number. Removing a participant (death, fleeing, unload — the M1 exit
 paths):

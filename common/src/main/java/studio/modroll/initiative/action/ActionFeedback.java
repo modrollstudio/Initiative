@@ -60,6 +60,7 @@ public final class ActionFeedback {
             case HANDS_FULL -> "initiative.action.hands_full";
             case TOTAL_COVER -> "initiative.action.total_cover";
             case INACTIVE -> "initiative.action.inactive";
+            case WAITING -> "initiative.action.waiting";
         };
     }
 }

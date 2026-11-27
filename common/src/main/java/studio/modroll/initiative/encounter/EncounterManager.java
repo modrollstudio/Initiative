@@ -254,7 +254,9 @@ public final class EncounterManager {
                 pullInRadius(level, encounter, config.triggerRadius());
                 if (turns.enabled()) {
                     pairMounts(level, encounter, turns);
-                    encounter.turnOrder().tick(TurnTimeout.forCurrentActor(level, encounter.turnOrder(), turns));
+                    if (!encounter.held()) {
+                        encounter.turnOrder().tick(TurnTimeout.forCurrentActor(level, encounter.turnOrder(), turns));
+                    }
                 }
                 ActionEconomy.tick(level, encounter);
                 SkippedTurns.announce(level, encounter);

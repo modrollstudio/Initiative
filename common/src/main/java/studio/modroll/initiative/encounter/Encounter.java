@@ -1,13 +1,16 @@
 package studio.modroll.initiative.encounter;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
 import net.minecraft.world.phys.Vec3;
 import studio.modroll.initiative.action.EncounterFlags;
@@ -38,6 +41,7 @@ public final class Encounter {
     private final TurnOrder turnOrder = new TurnOrder();
     private final Map<UUID, TurnBudget> budgets = new HashMap<>();
     private final EncounterFlags flags = new EncounterFlags();
+    private final List<BooleanSupplier> holds = new ArrayList<>();
     private final Map<UUID, ActionUiSnapshot> lastActionUiSnapshots = new LinkedHashMap<>();
     private TurnOrderSnapshot lastHudSnapshot;
     private int budgetRound = -1;
@@ -195,6 +199,17 @@ public final class Encounter {
 
     public EncounterFlags flags() {
         return flags;
+    }
+
+    /** Holds the fight until {@code landed} answers true. */
+    public void hold(BooleanSupplier landed) {
+        holds.add(landed);
+    }
+
+    /** Whether a hit on its way still holds the fight: no turn ends and no one acts until it lands. */
+    public boolean held() {
+        holds.removeIf(BooleanSupplier::getAsBoolean);
+        return !holds.isEmpty();
     }
 
     public Vec3 movementAnchor() {

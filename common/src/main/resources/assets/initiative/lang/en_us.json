@@ -9,6 +9,7 @@
   "initiative.action.disabled": "Action disabled",
   "initiative.action.not_in_encounter": "Not in an encounter",
   "initiative.action.inactive": "Turn actions inactive",
+  "initiative.action.waiting": "Wait for the hit to land",
   "initiative.command.action.done": "Action taken",
   "initiative.command.action.failed": "It comes to nothing",
   "initiative.command.end_turn.done": "Turn ended",
